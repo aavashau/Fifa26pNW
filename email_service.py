@@ -1,20 +1,12 @@
-import aiosmtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
+import httpx
 import os
 
-SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
-SMTP_PORT = int(os.getenv("SMTP_PORT", "465"))
-SMTP_USER = os.getenv("SMTP_USER", "").strip()
-SMTP_PASS = os.getenv("SMTP_PASSWORD", "").replace(" ", "").strip()
+BREVO_API_KEY = os.getenv("BREVO_API_KEY", "")
+SENDER_EMAIL = os.getenv("SENDER_EMAIL", "")
+SENDER_NAME = os.getenv("SENDER_NAME", "FWC 2026 Predictor")
 
 
 async def send_invite_email(to_email: str, invite_link: str, inviter_name: str = "The Admin"):
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = "You're invited to FWC 2026 Score Predictor!"
-    msg["From"] = SMTP_USER
-    msg["To"] = to_email
-
     html = f"""
 <!DOCTYPE html>
 <html>
@@ -42,13 +34,23 @@ async def send_invite_email(to_email: str, invite_link: str, inviter_name: str =
 </body>
 </html>
 """
-    msg.attach(MIMEText(html, "html"))
 
-    await aiosmtplib.send(
-        msg,
-        hostname=SMTP_HOST,
-        port=SMTP_PORT,
-        username=SMTP_USER,
-        password=SMTP_PASS,
-        use_tls=True,      # SSL on port 465 (not STARTTLS)
-    )
+    if not BREVO_API_KEY:
+        raise RuntimeError("BREVO_API_KEY is not set")
+
+    async with httpx.AsyncClient(timeout=15) as client:
+        resp = await client.post(
+            "https://api.brevo.com/v3/smtp/email",
+            headers={
+                "accept": "application/json",
+                "api-key": BREVO_API_KEY,
+                "content-type": "application/json",
+            },
+            json={
+                "sender": {"name": SENDER_NAME, "email": SENDER_EMAIL},
+                "to": [{"email": to_email}],
+                "subject": "You're invited to FWC 2026 Score Predictor!",
+                "htmlContent": html,
+            },
+        )
+    resp.raise_for_status()
