@@ -379,7 +379,10 @@ async def admin_invite(request: Request,
         await email_service.send_invite_email(email.strip(), invite_link)
         return RedirectResponse("/admin?msg=invite_sent", status_code=302)
     except Exception as e:
-        return RedirectResponse(f"/admin?msg=email_error", status_code=302)
+        import urllib.parse
+        err = urllib.parse.quote(str(e)[:200])
+        print(f"[email error] {e}")
+        return RedirectResponse(f"/admin?msg=email_error&detail={err}", status_code=302)
 
 
 @app.post("/admin/update-score/{match_code}")

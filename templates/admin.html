@@ -16,7 +16,7 @@
   {% else %}bg-green-900/40 border border-green-700 text-green-300{% endif %}">
   {% if msg == 'invite_sent' %}✅ Invite email sent successfully!
   {% elif msg == 'already_registered' %}⚠️ That email is already registered.
-  {% elif msg == 'email_error' %}❌ Failed to send email. Check SMTP settings.
+  {% elif msg == 'email_error' %}❌ Failed to send email: {{ request.query_params.get('detail', 'Check SMTP settings in Railway Variables.') }}
   {% elif msg == 'score_updated' %}✅ Score updated and points awarded!
   {% elif msg == 'teams_updated' %}✅ Teams updated.
   {% elif msg == 'fixtures_loaded' %}✅ Fixtures loaded into Google Sheet.

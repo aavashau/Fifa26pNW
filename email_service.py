@@ -5,8 +5,8 @@ import os
 
 SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
-SMTP_USER = os.getenv("SMTP_USER", "")
-SMTP_PASS = os.getenv("SMTP_PASSWORD", "")
+SMTP_USER = os.getenv("SMTP_USER", "").strip()
+SMTP_PASS = os.getenv("SMTP_PASSWORD", "").replace(" ", "").strip()  # App Passwords may have spaces
 
 
 async def send_invite_email(to_email: str, invite_link: str, inviter_name: str = "The Admin"):
