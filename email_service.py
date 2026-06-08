@@ -1,27 +1,19 @@
-import aiosmtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
+import httpx
 import os
 
-SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
-SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
-SMTP_USER = os.getenv("SMTP_USER", "").strip()
-SMTP_PASS = os.getenv("SMTP_PASSWORD", "").replace(" ", "").strip()  # App Passwords may have spaces
+BREVO_API_KEY = os.getenv("BREVO_API_KEY", "")
+SENDER_EMAIL = os.getenv("SENDER_EMAIL", os.getenv("SMTP_USER", ""))
+SENDER_NAME = os.getenv("SENDER_NAME", "FWC 2026 Predictor")
 
 
 async def send_invite_email(to_email: str, invite_link: str, inviter_name: str = "The Admin"):
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = "You're invited to FWC 2026 Score Predictor!"
-    msg["From"] = SMTP_USER
-    msg["To"] = to_email
-
     html = f"""
 <!DOCTYPE html>
 <html>
 <body style="font-family:Arial,sans-serif;background:#0f1117;color:#fff;margin:0;padding:20px;">
   <div style="max-width:540px;margin:0 auto;background:#1a1f2e;border-radius:12px;padding:40px;border:1px solid #2d3748;">
     <div style="text-align:center;margin-bottom:30px;">
-      <span style="font-size:48px;">⚽</span>
+      <span style="font-size:48px;">&#x26BD;</span>
       <h1 style="color:#FFD700;margin:10px 0;font-size:24px;">FIFA World Cup 2026</h1>
       <h2 style="color:#00c853;margin:0;font-size:18px;">Score Predictor</h2>
     </div>
@@ -36,19 +28,31 @@ async def send_invite_email(to_email: str, invite_link: str, inviter_name: str =
     </div>
     <p style="color:#718096;font-size:13px;">This link expires in 48 hours. If you didn't request this, ignore this email.</p>
     <p style="color:#718096;font-size:12px;border-top:1px solid #2d3748;padding-top:16px;margin-top:24px;">
-      FWC 2026 Score Predictor · Private Game
+      FWC 2026 Score Predictor &middot; Private Game
     </p>
   </div>
 </body>
 </html>
 """
-    msg.attach(MIMEText(html, "html"))
 
-    await aiosmtplib.send(
-        msg,
-        hostname=SMTP_HOST,
-        port=SMTP_PORT,
-        username=SMTP_USER,
-        password=SMTP_PASS,
-        start_tls=True,
-    )
+    if not BREVO_API_KEY:
+        raise RuntimeError("BREVO_API_KEY is not set")
+
+    payload = {
+        "sender": {"name": SENDER_NAME, "email": SENDER_EMAIL},
+        "to": [{"email": to_email}],
+        "subject": "You're invited to FWC 2026 Score Predictor!",
+        "htmlContent": html,
+    }
+
+    async with httpx.AsyncClient(timeout=15) as client:
+        resp = await client.post(
+            "https://api.brevo.com/v3/smtp/email",
+            headers={
+                "accept": "application/json",
+                "api-key": BREVO_API_KEY,
+                "content-type": "application/json",
+            },
+            json=payload,
+        )
+    resp.raise_for_status()
