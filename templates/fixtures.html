@@ -51,14 +51,30 @@
           {% endif %}
         </div>
 
-        <div class="flex items-center gap-2 font-semibold text-sm sm:text-base">
-          <span class="truncate">{{ m.home_team }}</span>
+        <div class="flex items-center gap-2 font-semibold text-sm sm:text-base flex-wrap">
+          <!-- Home team -->
+          <div class="flex items-center gap-1.5 shrink-0">
+            {% set home_flag = flag_url(m.home_team) %}
+            {% if home_flag %}
+            <img src="{{ home_flag }}" alt="{{ m.home_team }}"
+                 class="w-6 h-4 object-cover rounded-sm shadow" loading="lazy"/>
+            {% endif %}
+            <span>{{ m.home_team }}</span>
+          </div>
           {% if m.is_completed %}
             <span class="text-gold font-black shrink-0">{{ m.home_score }} – {{ m.away_score }}</span>
           {% else %}
             <span class="text-gray-600 shrink-0 font-normal text-xs">vs</span>
           {% endif %}
-          <span class="truncate">{{ m.away_team }}</span>
+          <!-- Away team -->
+          <div class="flex items-center gap-1.5 shrink-0">
+            {% set away_flag = flag_url(m.away_team) %}
+            {% if away_flag %}
+            <img src="{{ away_flag }}" alt="{{ m.away_team }}"
+                 class="w-6 h-4 object-cover rounded-sm shadow" loading="lazy"/>
+            {% endif %}
+            <span>{{ m.away_team }}</span>
+          </div>
         </div>
 
         <div class="text-xs text-gray-500 mt-0.5">

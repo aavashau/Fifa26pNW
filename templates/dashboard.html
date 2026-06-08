@@ -38,23 +38,60 @@
 {% if upcoming %}
 <div class="space-y-3 mb-10">
   {% for m in upcoming %}
-  <div class="card p-4 flex flex-col sm:flex-row sm:items-center gap-4">
+  <div class="card p-4 flex flex-col sm:flex-row sm:items-center gap-4
+              {% if m.status == 'open' %}ring-1 ring-primary/30{% endif %}">
     <div class="flex-1">
-      <div class="flex items-center gap-2 mb-1">
+      <div class="flex items-center gap-2 mb-2">
         <span class="text-xs text-gray-500 font-medium">{{ m.stage }}</span>
         <span class="badge badge-{{ m.status }}">{{ m.status }}</span>
       </div>
-      <div class="flex items-center gap-3 text-lg font-bold">
-        <span>{{ m.home_team }}</span>
-        <span class="text-gray-600 font-normal text-sm">vs</span>
-        <span>{{ m.away_team }}</span>
+
+      <!-- Teams with flags -->
+      <div class="flex items-center gap-3 mb-2">
+        <!-- Home -->
+        <div class="flex items-center gap-2">
+          {% set home_flag = flag_url(m.home_team) %}
+          {% if home_flag %}
+          <img src="{{ home_flag }}" alt="{{ m.home_team }}"
+               class="w-7 h-5 object-cover rounded-sm shadow" loading="lazy"/>
+          {% endif %}
+          <span class="font-bold text-sm sm:text-base">{{ m.home_team }}</span>
+        </div>
+        <span class="text-gray-600 font-normal text-sm shrink-0">vs</span>
+        <!-- Away -->
+        <div class="flex items-center gap-2">
+          {% set away_flag = flag_url(m.away_team) %}
+          {% if away_flag %}
+          <img src="{{ away_flag }}" alt="{{ m.away_team }}"
+               class="w-7 h-5 object-cover rounded-sm shadow" loading="lazy"/>
+          {% endif %}
+          <span class="font-bold text-sm sm:text-base">{{ m.away_team }}</span>
+        </div>
       </div>
-      <div class="text-xs text-gray-500 mt-1">
+
+      <div class="text-xs text-gray-500">
         🕐 {{ m.npt_time.strftime('%d %b %Y, %I:%M %p') }} NPT
       </div>
+
+      <!-- Countdown -->
+      {% if m.status == 'open' %}
+      <div class="flex items-center gap-1.5 mt-1.5">
+        <span class="text-xs text-primary font-medium">⏳ Predictions close in</span>
+        <span class="countdown font-mono text-xs font-bold text-primary"
+              data-target="{{ (m.match_time_utc.timestamp() - 3600)|int }}"
+              data-type="close">--:--:--</span>
+      </div>
+      {% elif m.status == 'upcoming' and m.home_team != 'TBD' %}
+      <div class="flex items-center gap-1.5 mt-1.5">
+        <span class="text-xs text-gray-500">⏱ Kickoff in</span>
+        <span class="countdown font-mono text-xs font-bold text-blue-400"
+              data-target="{{ m.match_time_utc.timestamp()|int }}"
+              data-type="kickoff">--d --h --m --s</span>
+      </div>
+      {% endif %}
     </div>
 
-    <div class="flex items-center gap-3">
+    <div class="flex items-center gap-3 shrink-0">
       {% if m.user_prediction %}
         <div class="text-center">
           <div class="text-xs text-gray-500 mb-1">Your pick</div>
@@ -87,14 +124,30 @@
   <div class="card p-4 flex items-center gap-4">
     <div class="flex-1">
       <div class="text-xs text-gray-500 mb-1">{{ m.stage }}</div>
-      <div class="flex items-center gap-2 font-semibold">
-        <span>{{ m.home_team }}</span>
-        <span class="text-gold font-black text-lg">{{ m.home_score }} – {{ m.away_score }}</span>
-        <span>{{ m.away_team }}</span>
+      <div class="flex items-center gap-2 flex-wrap">
+        <!-- Home -->
+        <div class="flex items-center gap-1.5">
+          {% set home_flag = flag_url(m.home_team) %}
+          {% if home_flag %}
+          <img src="{{ home_flag }}" alt="{{ m.home_team }}"
+               class="w-6 h-4 object-cover rounded-sm" loading="lazy"/>
+          {% endif %}
+          <span class="font-semibold text-sm">{{ m.home_team }}</span>
+        </div>
+        <span class="text-gold font-black text-lg shrink-0">{{ m.home_score }} – {{ m.away_score }}</span>
+        <!-- Away -->
+        <div class="flex items-center gap-1.5">
+          {% set away_flag = flag_url(m.away_team) %}
+          {% if away_flag %}
+          <img src="{{ away_flag }}" alt="{{ m.away_team }}"
+               class="w-6 h-4 object-cover rounded-sm" loading="lazy"/>
+          {% endif %}
+          <span class="font-semibold text-sm">{{ m.away_team }}</span>
+        </div>
       </div>
     </div>
     {% if m.user_prediction %}
-    <div class="text-right">
+    <div class="text-right shrink-0">
       <div class="text-xs text-gray-500">Your pick</div>
       <div class="text-sm font-medium">{{ m.user_prediction.home_score }} – {{ m.user_prediction.away_score }}</div>
       {% if m.user_prediction.points_earned is not none %}
@@ -109,10 +162,41 @@
       {% endif %}
     </div>
     {% else %}
-    <div class="text-xs text-gray-600 italic">No prediction</div>
+    <div class="text-xs text-gray-600 italic shrink-0">No prediction</div>
     {% endif %}
   </div>
   {% endfor %}
 </div>
 {% endif %}
+
+<script>
+function formatCountdown(secondsLeft) {
+  if (secondsLeft <= 0) return null;
+  const d = Math.floor(secondsLeft / 86400);
+  const h = Math.floor((secondsLeft % 86400) / 3600);
+  const m = Math.floor((secondsLeft % 3600) / 60);
+  const s = secondsLeft % 60;
+  if (d > 0) return `${d}d ${String(h).padStart(2,'0')}h ${String(m).padStart(2,'0')}m`;
+  if (h > 0) return `${String(h).padStart(2,'0')}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`;
+  return `${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`;
+}
+
+function tickAll() {
+  const now = Math.floor(Date.now() / 1000);
+  document.querySelectorAll('.countdown').forEach(el => {
+    const target = parseInt(el.dataset.target, 10);
+    const left = target - now;
+    if (left <= 0) {
+      el.textContent = el.dataset.type === 'close' ? 'CLOSED' : 'KICKED OFF';
+      if (left > -5) setTimeout(() => location.reload(), 1500);
+      return;
+    }
+    el.textContent = formatCountdown(left);
+    if (left < 3600) el.classList.add('animate-pulse');
+  });
+}
+
+tickAll();
+setInterval(tickAll, 1000);
+</script>
 {% endblock %}
