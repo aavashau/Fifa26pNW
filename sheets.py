@@ -9,6 +9,28 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Optional
 
+import re
+
+
+def _parse_credentials_json(raw: str) -> dict:
+    """Parse GOOGLE_CREDENTIALS_JSON robustly — handles Railway's newline mangling."""
+    # Try direct parse first
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        pass
+    # Railway sometimes turns \n escape sequences into literal newlines inside
+    # the private_key string value, making the JSON invalid.
+    # Fix: escape literal newlines only within the private_key value.
+    fixed = re.sub(
+        r'("private_key"\s*:\s*")(.*?)(")',
+        lambda m: m.group(1) + m.group(2).replace('\n', '\\n').replace('\r', '') + m.group(3),
+        raw,
+        flags=re.DOTALL,
+    )
+    return json.loads(fixed)
+
+
 SCOPES = [
     "https://spreadsheets.google.com/feeds",
     "https://www.googleapis.com/auth/spreadsheets",
@@ -27,9 +49,7 @@ def get_spreadsheet():
 
     creds_json = os.getenv("GOOGLE_CREDENTIALS_JSON")
     if creds_json:
-        # Railway sometimes double-escapes \n in private keys — fix it
-        creds_json = creds_json.replace("\\n", "\n")
-        info = json.loads(creds_json)
+        info = _parse_credentials_json(creds_json)
         creds = Credentials.from_service_account_info(info, scopes=SCOPES)
     else:
         path = os.getenv("GOOGLE_CREDENTIALS_FILE", "credentials.json")
