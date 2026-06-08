@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Register · FWC 2026 Predictor</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background: #0f1117; }
+    .card { background: #1a1f2e; border: 1px solid #2d3748; border-radius: .75rem; }
+    .field { background: #0f1117; border: 1px solid #2d3748; border-radius: .5rem;
+             color: #fff; padding: .625rem .875rem; width: 100%; transition: border-color .15s; }
+    .field:focus { outline: none; border-color: #00c853; }
+    .field:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-primary { background: #00c853; color: #000; font-weight: 700; border-radius: .5rem;
+                   padding: .625rem; width: 100%; font-size: 1rem; transition: opacity .15s; }
+    .btn-primary:hover { opacity: .85; }
+  </style>
+</head>
+<body class="text-white min-h-screen flex flex-col items-center justify-center px-4">
+
+  <div class="text-center mb-8">
+    <span class="text-6xl">⚽</span>
+    <h1 class="text-3xl font-bold mt-3">
+      <span style="color:#FFD700">FWC 2026</span>
+      <span style="color:#00c853"> Predictor</span>
+    </h1>
+    <p class="text-gray-400 mt-1">Create your account</p>
+  </div>
+
+  <div class="card w-full max-w-sm p-8">
+    <h2 class="text-xl font-bold mb-6 text-center">Register</h2>
+
+    {% if error %}
+    <div class="bg-red-900/40 border border-red-700 text-red-300 rounded-lg px-4 py-3 mb-4 text-sm">
+      {{ error }}
+    </div>
+    {% endif %}
+
+    <form method="post" action="/register/{{ token }}" class="space-y-4">
+      <div>
+        <label class="text-sm text-gray-400 block mb-1">Email (from invitation)</label>
+        <input type="email" class="field" value="{{ email }}" disabled/>
+      </div>
+      <div>
+        <label class="text-sm text-gray-400 block mb-1">Username</label>
+        <input type="text" name="username" required minlength="3" maxlength="30"
+               class="field" placeholder="Pick a username"/>
+      </div>
+      <div>
+        <label class="text-sm text-gray-400 block mb-1">Password</label>
+        <input type="password" name="password" required minlength="6"
+               class="field" placeholder="At least 6 characters"/>
+      </div>
+      <div>
+        <label class="text-sm text-gray-400 block mb-1">Confirm Password</label>
+        <input type="password" name="password2" required minlength="6"
+               class="field" placeholder="Repeat your password"/>
+      </div>
+      <button type="submit" class="btn-primary">Create Account</button>
+    </form>
+  </div>
+
+</body>
+</html>

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Initial Setup · FWC 2026</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background: #0f1117; }
+    .card { background: #1a1f2e; border: 1px solid #2d3748; border-radius: .75rem; }
+    .field { background: #0f1117; border: 1px solid #2d3748; border-radius: .5rem;
+             color: #fff; padding: .625rem .875rem; width: 100%; transition: border-color .15s; }
+    .field:focus { outline: none; border-color: #FFD700; }
+    .btn { background: #FFD700; color: #000; font-weight: 700; border-radius: .5rem;
+           padding: .625rem; width: 100%; font-size: 1rem; transition: opacity .15s; }
+    .btn:hover { opacity: .85; }
+  </style>
+</head>
+<body class="text-white min-h-screen flex flex-col items-center justify-center px-4">
+
+  <div class="text-center mb-8">
+    <span class="text-6xl">⚙️</span>
+    <h1 class="text-2xl font-bold mt-3 text-yellow-400">First-Time Setup</h1>
+    <p class="text-gray-400 mt-1">Create your admin account and load all fixtures</p>
+  </div>
+
+  <div class="card w-full max-w-sm p-8">
+    {% if error %}
+    <div class="bg-red-900/40 border border-red-700 text-red-300 rounded-lg px-4 py-3 mb-4 text-sm">{{ error }}</div>
+    {% endif %}
+
+    <form method="post" action="/setup" class="space-y-4">
+      <div>
+        <label class="text-sm text-gray-400 block mb-1">Admin Username</label>
+        <input type="text" name="username" required class="field" placeholder="admin"/>
+      </div>
+      <div>
+        <label class="text-sm text-gray-400 block mb-1">Your Email</label>
+        <input type="email" name="email" required class="field" placeholder="you@gmail.com"/>
+      </div>
+      <div>
+        <label class="text-sm text-gray-400 block mb-1">Password</label>
+        <input type="password" name="password" required minlength="6" class="field"/>
+      </div>
+      <button type="submit" class="btn">
+        🚀 Create Admin &amp; Load 104 Fixtures
+      </button>
+    </form>
+
+    <div class="mt-6 p-4 rounded-lg text-xs text-gray-400" style="background:#0f1117;border:1px solid #2d3748;">
+      <p class="font-semibold text-gray-300 mb-2">Before clicking:</p>
+      <ul class="space-y-1 list-disc list-inside">
+        <li>Google Sheet must be shared with your service account</li>
+        <li><code class="text-green-400">GOOGLE_SHEET_ID</code> must be set in <code class="text-green-400">.env</code></li>
+        <li>Fixtures will be written to the sheet automatically</li>
+      </ul>
+    </div>
+  </div>
+
+</body>
+</html>

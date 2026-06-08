@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% set active = "leaderboard" %}
+{% block title %}Leaderboard · FWC 2026{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-black mb-2">Leaderboard</h1>
+<p class="text-gray-500 text-sm mb-8">
+  🎯 Exact score = 3 pts &nbsp;·&nbsp; ✓ Correct outcome = 1 pt
+</p>
+
+{% if board %}
+<div class="card overflow-hidden">
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="border-b border-border text-xs text-gray-500 uppercase tracking-wide">
+        <th class="py-3 px-4 text-left w-12">Rank</th>
+        <th class="py-3 px-4 text-left">Player</th>
+        <th class="py-3 px-4 text-center">Predictions</th>
+        <th class="py-3 px-4 text-right">Points</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in board %}
+      <tr class="border-b border-border/50 transition-colors
+                 {% if row.user_id == user.id %}bg-primary/10{% else %}hover:bg-white/3{% endif %}">
+        <td class="py-3 px-4">
+          {% if row.rank == 1 %}
+            <span class="text-xl">🥇</span>
+          {% elif row.rank == 2 %}
+            <span class="text-xl">🥈</span>
+          {% elif row.rank == 3 %}
+            <span class="text-xl">🥉</span>
+          {% else %}
+            <span class="text-gray-500 font-mono">#{{ row.rank }}</span>
+          {% endif %}
+        </td>
+        <td class="py-3 px-4 font-semibold">
+          {{ row.username }}
+          {% if row.user_id == user.id %}
+            <span class="text-xs text-primary ml-1">(you)</span>
+          {% endif %}
+        </td>
+        <td class="py-3 px-4 text-center text-gray-400">{{ row.predicted }}</td>
+        <td class="py-3 px-4 text-right">
+          <span class="font-black text-lg
+            {% if row.rank == 1 %}text-gold
+            {% elif row.rank <= 3 %}text-primary
+            {% else %}text-white{% endif %}">
+            {{ row.points }}
+          </span>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card p-12 text-center text-gray-500">
+  <div class="text-4xl mb-3">🏆</div>
+  <p>No results yet. Leaderboard updates after match scores are entered.</p>
+</div>
+{% endif %}
+{% endblock %}

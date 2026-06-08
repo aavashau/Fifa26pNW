@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+{% set active = "fixtures" %}
+{% block title %}Fixtures · FWC 2026{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-2xl font-black">All Fixtures</h1>
+  <div class="flex gap-2 text-xs">
+    <span class="badge badge-open">Open</span>
+    <span class="badge badge-upcoming">Upcoming</span>
+    <span class="badge badge-closed">Closed</span>
+    <span class="badge badge-completed">Done</span>
+  </div>
+</div>
+
+<!-- Stage navigation pills -->
+<div class="flex flex-wrap gap-2 mb-8">
+  {% for stage, _ in stages %}
+  <button onclick="scrollToStage('{{ stage | replace(' ', '_') }}')"
+          class="text-xs px-3 py-1 rounded-full border border-border text-gray-400
+                 hover:border-primary hover:text-primary transition-colors">
+    {{ stage }}
+  </button>
+  {% endfor %}
+</div>
+
+{% for stage, matches in stages %}
+<div id="stage_{{ stage | replace(' ','_') }}" class="mb-10">
+  <div class="flex items-center gap-3 mb-4">
+    <h2 class="text-base font-bold text-gray-200">{{ stage }}</h2>
+    <div class="flex-1 h-px bg-border"></div>
+    <span class="text-xs text-gray-600">{{ matches | length }} matches</span>
+  </div>
+
+  <div class="space-y-2">
+    {% for m in matches %}
+    <div class="card px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3
+                {% if m.status == 'open' %}ring-1 ring-primary/30{% endif %}"
+         data-kickoff="{{ m.match_time_utc.isoformat() }}"
+         data-status="{{ 'completed' if m.is_completed else m.status }}"
+         data-code="{{ m.match_code }}">
+
+      <!-- Teams & info -->
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2 mb-1">
+          <span class="text-xs text-gray-600">{{ m.match_code }}</span>
+          {% if m.is_completed %}
+            <span class="badge badge-completed">FT</span>
+          {% else %}
+            <span class="badge badge-{{ m.status }}">{{ m.status }}</span>
+          {% endif %}
+        </div>
+
+        <div class="flex items-center gap-2 font-semibold text-sm sm:text-base">
+          <span class="truncate">{{ m.home_team }}</span>
+          {% if m.is_completed %}
+            <span class="text-gold font-black shrink-0">{{ m.home_score }} – {{ m.away_score }}</span>
+          {% else %}
+            <span class="text-gray-600 shrink-0 font-normal text-xs">vs</span>
+          {% endif %}
+          <span class="truncate">{{ m.away_team }}</span>
+        </div>
+
+        <div class="text-xs text-gray-500 mt-0.5">
+          🕐 {{ m.npt_time.strftime('%d %b · %I:%M %p') }} NPT
+          {% if m.venue %} · 📍 {{ m.venue }}{% endif %}
+        </div>
+
+        {% if m.notes and m.home_team == 'TBD' %}
+        <div class="text-xs text-gray-600 mt-0.5 italic">{{ m.notes }}</div>
+        {% endif %}
+
+        <!-- Countdown timer -->
+        {% if not m.is_completed %}
+        <div class="mt-1.5 countdown-wrap">
+          {% if m.status == 'open' %}
+            <div class="flex items-center gap-1.5">
+              <span class="text-xs text-primary font-medium">⏳ Predictions close in</span>
+              <span class="countdown font-mono text-xs font-bold text-primary"
+                    data-target="{{ (m.match_time_utc.timestamp() - 3600)|int }}">
+                --:--:--
+              </span>
+            </div>
+          {% elif m.status == 'upcoming' and m.home_team != 'TBD' %}
+            <div class="flex items-center gap-1.5">
+              <span class="text-xs text-gray-500">⏱ Kickoff in</span>
+              <span class="countdown font-mono text-xs font-bold text-blue-400"
+                    data-target="{{ m.match_time_utc.timestamp()|int }}">
+                --d --h --m --s
+              </span>
+            </div>
+          {% elif m.status == 'closed' and not m.is_completed %}
+            <div class="text-xs text-gray-600 italic">Match in progress or about to start</div>
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Prediction column -->
+      <div class="flex items-center gap-3 shrink-0">
+        {% if m.user_prediction %}
+          <div class="text-center">
+            <div class="text-xs text-gray-500">Your pick</div>
+            <div class="font-bold text-sm
+              {% if m.user_prediction.points_earned == 3 %}text-gold
+              {% elif m.user_prediction.points_earned == 1 %}text-primary
+              {% elif m.user_prediction.points_earned == 0 %}text-red-400
+              {% else %}text-white{% endif %}">
+              {{ m.user_prediction.home_score }} – {{ m.user_prediction.away_score }}
+              {% if m.user_prediction.points_earned is not none %}
+                <span class="text-xs">(+{{ m.user_prediction.points_earned }})</span>
+              {% endif %}
+            </div>
+          </div>
+        {% endif %}
+
+        {% if m.status == 'open' %}
+          <a href="/predict/{{ m.match_code }}" class="btn-primary text-xs">
+            {% if m.user_prediction %}Edit{% else %}Predict{% endif %}
+          </a>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endfor %}
+
+<script>
+function scrollToStage(id) {
+  const el = document.getElementById('stage_' + id);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function formatCountdown(secondsLeft, isClose) {
+  if (secondsLeft <= 0) return isClose ? 'CLOSED' : 'KICKED OFF';
+  const d = Math.floor(secondsLeft / 86400);
+  const h = Math.floor((secondsLeft % 86400) / 3600);
+  const m = Math.floor((secondsLeft % 3600) / 60);
+  const s = secondsLeft % 60;
+  if (d > 0) return `${d}d ${String(h).padStart(2,'0')}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`;
+  if (h > 0) return `${String(h).padStart(2,'0')}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`;
+  return `${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`;
+}
+
+function tickAll() {
+  const now = Math.floor(Date.now() / 1000);
+  document.querySelectorAll('.countdown').forEach(el => {
+    const target = parseInt(el.dataset.target, 10);
+    const left = target - now;
+    const isClose = el.closest('.countdown-wrap')
+                      ?.querySelector('.text-primary') !== null;
+    el.textContent = formatCountdown(Math.max(0, left), isClose);
+
+    // Flash green pulse when under 1 hour
+    if (left > 0 && left < 3600) {
+      el.classList.add('animate-pulse');
+    }
+    // Auto-reload page when a countdown expires so status badges update
+    if (left <= 0 && left > -5) {
+      setTimeout(() => location.reload(), 1500);
+    }
+  });
+}
+
+tickAll();
+setInterval(tickAll, 1000);
+</script>
+{% endblock %}

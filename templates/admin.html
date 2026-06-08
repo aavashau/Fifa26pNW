@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% set active = "admin" %}
+{% block title %}Admin · FWC 2026{% endblock %}
+
+{% block content %}
+<div class="flex items-center gap-3 mb-8">
+  <span class="text-2xl">⚙️</span>
+  <h1 class="text-2xl font-black text-gold">Admin Panel</h1>
+</div>
+
+<!-- Flash message -->
+{% set msg = request.query_params.get('msg','') %}
+{% if msg %}
+<div class="mb-6 px-4 py-3 rounded-lg text-sm font-medium
+  {% if 'error' in msg %}bg-red-900/40 border border-red-700 text-red-300
+  {% else %}bg-green-900/40 border border-green-700 text-green-300{% endif %}">
+  {% if msg == 'invite_sent' %}✅ Invite email sent successfully!
+  {% elif msg == 'already_registered' %}⚠️ That email is already registered.
+  {% elif msg == 'email_error' %}❌ Failed to send email. Check SMTP settings.
+  {% elif msg == 'score_updated' %}✅ Score updated and points awarded!
+  {% elif msg == 'teams_updated' %}✅ Teams updated.
+  {% elif msg == 'fixtures_loaded' %}✅ Fixtures loaded into Google Sheet.
+  {% elif msg == 'fixtures_reloaded' %}✅ Fixtures cleared and reloaded with official 2026 schedule!
+  {% else %}{{ msg }}{% endif %}
+</div>
+{% endif %}
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
+
+  <!-- Invite -->
+  <div class="card p-6">
+    <h2 class="font-bold text-gray-200 mb-4 flex items-center gap-2">✉️ Send Invite</h2>
+    <form method="post" action="/admin/invite" class="space-y-3">
+      <input type="email" name="email" required placeholder="user@example.com"
+             class="w-full bg-dark border border-border rounded-lg px-3 py-2 text-sm text-white
+                    focus:outline-none focus:border-gold"/>
+      <button type="submit" class="btn-gold w-full text-sm">Send Invitation Link</button>
+    </form>
+    <p class="text-xs text-gray-500 mt-3">Link expires in 48 hours.</p>
+  </div>
+
+  <!-- Stats -->
+  <div class="card p-6">
+    <h2 class="font-bold text-gray-200 mb-4 flex items-center gap-2">📊 Stats</h2>
+    <div class="space-y-2 text-sm">
+      <div class="flex justify-between">
+        <span class="text-gray-400">Registered users</span>
+        <span class="font-bold text-white">{{ users | length }}</span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-gray-400">Total matches</span>
+        <span class="font-bold text-white">{{ matches | length }}</span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-gray-400">Completed</span>
+        <span class="font-bold text-primary">{{ matches | selectattr('is_completed') | list | length }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Load / Reload fixtures -->
+  <div class="card p-6">
+    <h2 class="font-bold text-gray-200 mb-4 flex items-center gap-2">📋 Fixtures</h2>
+    <p class="text-xs text-gray-400 mb-3">Load all 104 official fixtures (only if sheet is empty).</p>
+    <form method="post" action="/admin/load-fixtures" class="mb-3">
+      <button type="submit" class="btn-primary w-full text-sm">Load All Fixtures</button>
+    </form>
+    <p class="text-xs text-gray-600 mb-3">― or ―</p>
+    <p class="text-xs text-gray-400 mb-3">⚠️ Force reload clears existing fixtures and scores.</p>
+    <form method="post" action="/admin/reload-fixtures"
+          onsubmit="return confirm('This will DELETE all existing fixture data and scores. Continue?')">
+      <button type="submit"
+              class="w-full text-sm font-bold rounded-lg py-2 px-3 border border-red-700 text-red-400 hover:bg-red-900/30 transition-colors">
+        🔄 Force Reload Official Fixtures
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- Users table -->
+<h2 class="font-bold text-gray-200 mb-3">Registered Users</h2>
+<div class="card overflow-x-auto mb-10">
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="border-b border-border text-xs text-gray-500 uppercase tracking-wide">
+        <th class="py-3 px-4 text-left">Username</th>
+        <th class="py-3 px-4 text-left">Email</th>
+        <th class="py-3 px-4 text-center">Admin</th>
+        <th class="py-3 px-4 text-center">Active</th>
+        <th class="py-3 px-4 text-left">Joined</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for u in users %}
+      <tr class="border-b border-border/50 hover:bg-white/3">
+        <td class="py-3 px-4 font-medium">{{ u.username }}</td>
+        <td class="py-3 px-4 text-gray-400">{{ u.email }}</td>
+        <td class="py-3 px-4 text-center">
+          {% if u.is_admin %}<span class="text-gold text-xs font-bold">ADMIN</span>{% else %}-{% endif %}
+        </td>
+        <td class="py-3 px-4 text-center">
+          {% if u.is_active %}<span class="text-primary">✓</span>{% else %}<span class="text-red-400">✗</span>{% endif %}
+        </td>
+        <td class="py-3 px-4 text-gray-500 text-xs">{{ u.created_at[:10] }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Matches management -->
+<h2 class="font-bold text-gray-200 mb-3">Match Management</h2>
+<div class="space-y-2">
+  {% for m in matches %}
+  <details class="card">
+    <summary class="px-4 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/3 rounded-xl select-none">
+      <span class="text-xs text-gray-500 w-20 shrink-0">{{ m.match_code }}</span>
+      <span class="badge badge-{{ m.status }} shrink-0">
+        {% if m.is_completed %}FT{% else %}{{ m.status }}{% endif %}
+      </span>
+      <span class="font-medium flex-1 truncate text-sm">
+        {{ m.home_team }} vs {{ m.away_team }}
+        {% if m.is_completed %}<span class="text-gold ml-2">{{ m.home_score }}–{{ m.away_score }}</span>{% endif %}
+      </span>
+      <span class="text-xs text-gray-500 shrink-0">
+        {{ m.npt_time.strftime('%d %b %I:%M%p') }} NPT
+      </span>
+    </summary>
+
+    <div class="px-4 pb-4 grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-border mt-0 pt-4">
+      <!-- Update score -->
+      {% if not m.is_completed %}
+      <div>
+        <h4 class="text-xs font-bold text-gray-400 mb-2 uppercase tracking-wide">Enter Final Score</h4>
+        <form method="post" action="/admin/update-score/{{ m.match_code }}" class="flex items-center gap-2">
+          <input type="number" name="home_score" min="0" max="30" placeholder="H"
+                 class="score-input w-14 text-sm"/>
+          <span class="text-gray-500">–</span>
+          <input type="number" name="away_score" min="0" max="30" placeholder="A"
+                 class="score-input w-14 text-sm"/>
+          <button type="submit" class="btn-primary text-xs px-3 py-2">Save &amp; Award Points</button>
+        </form>
+      </div>
+      {% else %}
+      <div class="flex items-center gap-2">
+        <span class="text-xs text-gray-500">Result:</span>
+        <span class="font-black text-gold">{{ m.home_score }} – {{ m.away_score }}</span>
+      </div>
+      {% endif %}
+
+      <!-- Update teams (for TBD knockout) -->
+      {% if m.home_team == 'TBD' or m.away_team == 'TBD' %}
+      <div>
+        <h4 class="text-xs font-bold text-gray-400 mb-2 uppercase tracking-wide">Set Teams</h4>
+        <form method="post" action="/admin/update-teams/{{ m.match_code }}" class="flex flex-wrap items-center gap-2">
+          <input type="text" name="home_team" placeholder="Home team"
+                 value="{{ m.home_team if m.home_team != 'TBD' else '' }}"
+                 class="flex-1 min-w-24 bg-dark border border-border rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-primary"/>
+          <input type="text" name="away_team" placeholder="Away team"
+                 value="{{ m.away_team if m.away_team != 'TBD' else '' }}"
+                 class="flex-1 min-w-24 bg-dark border border-border rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-primary"/>
+          <button type="submit" class="btn-primary text-xs px-3 py-2">Update</button>
+        </form>
+        {% if m.notes %}<p class="text-xs text-gray-600 mt-1 italic">{{ m.notes }}</p>{% endif %}
+      </div>
+      {% endif %}
+    </div>
+  </details>
+  {% endfor %}
+</div>
+{% endblock %}

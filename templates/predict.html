@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block title %}Predict · {{ match.home_team }} vs {{ match.away_team }}{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto">
+  <a href="/fixtures" class="text-sm text-gray-500 hover:text-primary mb-6 inline-block">← Back to Fixtures</a>
+
+  <div class="card p-8 text-center">
+    <div class="text-xs text-gray-500 uppercase tracking-widest mb-4 font-medium">{{ match.stage }}</div>
+
+    <!-- Teams & score input -->
+    <div class="flex items-center justify-center gap-6 mb-8">
+      <div class="flex-1 text-right">
+        <div class="text-2xl font-black">{{ match.home_team }}</div>
+        <div class="text-xs text-gray-500 mt-1">Home</div>
+      </div>
+
+      {% if status == 'open' %}
+      <form method="post" action="/predict/{{ match.match_code }}" id="pred-form">
+        <div class="flex items-center gap-3">
+          <input type="number" name="home_score" id="home_score" min="0" max="20"
+                 value="{{ existing.home_score if existing else 0 }}"
+                 class="score-input" required/>
+          <span class="text-2xl font-black text-gray-600">–</span>
+          <input type="number" name="away_score" id="away_score" min="0" max="20"
+                 value="{{ existing.away_score if existing else 0 }}"
+                 class="score-input" required/>
+        </div>
+      </form>
+      {% else %}
+      <div class="flex items-center gap-3">
+        {% if match.is_completed %}
+          <div class="text-4xl font-black text-gold">{{ match.home_score }} – {{ match.away_score }}</div>
+        {% else %}
+          <div class="text-3xl font-black text-gray-600">– vs –</div>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      <div class="flex-1 text-left">
+        <div class="text-2xl font-black">{{ match.away_team }}</div>
+        <div class="text-xs text-gray-500 mt-1">Away</div>
+      </div>
+    </div>
+
+    <!-- Match info -->
+    <div class="text-sm text-gray-400 mb-2">
+      🕐 {{ npt_time.strftime('%A, %d %B %Y · %I:%M %p') }} NPT
+    </div>
+    {% if match.venue %}
+    <div class="text-sm text-gray-500 mb-3">📍 {{ match.venue }}</div>
+    {% endif %}
+
+    <!-- Countdown -->
+    {% if not match.is_completed %}
+    <div class="mb-5">
+      {% if status == 'open' %}
+        <div class="inline-flex items-center gap-2 px-4 py-2 rounded-lg"
+             style="background:#00c85318;border:1px solid #00c85340;">
+          <span class="text-xs text-primary font-medium">⏳ Predictions close in</span>
+          <span id="main-countdown" class="font-mono font-black text-primary text-sm"
+                data-target="{{ (match.match_time_utc.timestamp() - 3600)|int }}">--:--</span>
+        </div>
+      {% elif status == 'upcoming' %}
+        <div class="inline-flex items-center gap-2 px-4 py-2 rounded-lg"
+             style="background:#3b82f618;border:1px solid #3b82f640;">
+          <span class="text-xs text-blue-400 font-medium">⏱ Kickoff in</span>
+          <span id="main-countdown" class="font-mono font-black text-blue-400 text-sm"
+                data-target="{{ match.match_time_utc.timestamp()|int }}">--:--</span>
+        </div>
+        <div class="text-xs text-gray-500 mt-2">Predictions open 24 hours before kickoff</div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Status & action -->
+    {% if status == 'open' %}
+      <div class="mb-6">
+        <span class="badge badge-open text-sm px-3 py-1">Predictions Open</span>
+        <p class="text-xs text-gray-500 mt-2">Closes 1 hour before kickoff</p>
+      </div>
+      {% if existing %}
+      <p class="text-sm text-gray-400 mb-4">
+        Current prediction: <strong class="text-primary">{{ existing.home_score }} – {{ existing.away_score }}</strong> · you can change it
+      </p>
+      {% endif %}
+      <button type="submit" form="pred-form" class="btn-primary text-base px-8 py-3">
+        {% if existing %}Update Prediction{% else %}Submit Prediction{% endif %}
+      </button>
+
+    {% elif status == 'upcoming' %}
+      <div class="mb-4"><span class="badge badge-upcoming text-sm px-3 py-1">Not Open Yet</span></div>
+      <p class="text-gray-500 text-sm">Predictions open 24 hours before kickoff.</p>
+
+    {% elif status == 'closed' %}
+      <div class="mb-4"><span class="badge badge-closed text-sm px-3 py-1">Predictions Closed</span></div>
+      {% if existing %}
+      <p class="text-sm text-gray-400">
+        Your prediction: <strong class="text-primary">{{ existing.home_score }} – {{ existing.away_score }}</strong>
+        {% if existing.points_earned is not none %}
+          · <strong class="{% if existing.points_earned == 3 %}text-gold{% elif existing.points_earned > 0 %}text-primary{% else %}text-red-400{% endif %}">
+            {{ existing.points_earned }} pts
+          </strong>
+        {% endif %}
+      </p>
+      {% else %}
+      <p class="text-gray-500 text-sm">You did not predict this match.</p>
+      {% endif %}
+    {% endif %}
+  </div>
+
+  <!-- Scoring guide -->
+  <div class="card p-5 mt-4">
+    <h3 class="text-sm font-bold text-gray-300 mb-3">Scoring Rules</h3>
+    <div class="grid grid-cols-3 gap-3 text-center text-sm">
+      <div class="p-3 rounded-lg" style="background:#FFD70020;border:1px solid #FFD70040;">
+        <div class="font-black text-gold text-xl">3</div>
+        <div class="text-xs text-gray-400 mt-1">Exact score</div>
+      </div>
+      <div class="p-3 rounded-lg" style="background:#00c85320;border:1px solid #00c85340;">
+        <div class="font-black text-primary text-xl">1</div>
+        <div class="text-xs text-gray-400 mt-1">Correct outcome<br/>(W/D/L)</div>
+      </div>
+      <div class="p-3 rounded-lg" style="background:#ef444420;border:1px solid #ef444440;">
+        <div class="font-black text-red-400 text-xl">0</div>
+        <div class="text-xs text-gray-400 mt-1">Wrong outcome</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function formatCountdown(secondsLeft) {
+  if (secondsLeft <= 0) return 'EXPIRED';
+  const d = Math.floor(secondsLeft / 86400);
+  const h = Math.floor((secondsLeft % 86400) / 3600);
+  const m = Math.floor((secondsLeft % 3600) / 60);
+  const s = secondsLeft % 60;
+  if (d > 0) return `${d}d ${String(h).padStart(2,'0')}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`;
+  if (h > 0) return `${String(h).padStart(2,'0')}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`;
+  return `${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`;
+}
+
+const el = document.getElementById('main-countdown');
+if (el) {
+  function tick() {
+    const target = parseInt(el.dataset.target, 10);
+    const left = target - Math.floor(Date.now() / 1000);
+    el.textContent = formatCountdown(Math.max(0, left));
+    if (left <= 0) setTimeout(() => location.reload(), 1500);
+  }
+  tick();
+  setInterval(tick, 1000);
+}
+</script>
+{% endblock %}
