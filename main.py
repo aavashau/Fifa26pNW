@@ -73,7 +73,18 @@ templates.env.globals["prediction_status"] = prediction_status
 
 @app.on_event("startup")
 def startup():
-    sheets.init_sheets()
+    try:
+        sheets.init_sheets()
+    except Exception as e:
+        print(f"[startup] Google Sheets init warning: {e}")
+        print("[startup] App will still start — Sheets will connect on first request.")
+
+
+# ── health check ─────────────────────────────────────────────────────────────
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
 
 
 # ── public routes ─────────────────────────────────────────────────────────────

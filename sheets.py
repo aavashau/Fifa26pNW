@@ -27,6 +27,8 @@ def get_spreadsheet():
 
     creds_json = os.getenv("GOOGLE_CREDENTIALS_JSON")
     if creds_json:
+        # Railway sometimes double-escapes \n in private keys — fix it
+        creds_json = creds_json.replace("\\n", "\n")
         info = json.loads(creds_json)
         creds = Credentials.from_service_account_info(info, scopes=SCOPES)
     else:
