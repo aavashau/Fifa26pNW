@@ -136,58 +136,38 @@
     {% endfor %}
   </div>
 
-  <!-- ── RIGHT: Group Standings ── -->
-  <div class="hidden lg:block w-72 shrink-0 space-y-3 sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto pr-1" id="standings-panel">
-    <div class="flex items-center gap-2 mb-2">
+  <!-- ── RIGHT: Group Standings (ESPN live) ── -->
+  <div class="hidden lg:block w-72 shrink-0 sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto pr-1">
+
+    <div class="flex items-center justify-between mb-3">
       <h2 class="text-xs font-black uppercase tracking-widest text-slate-400">Group Standings</h2>
+      <span id="espn-status" class="text-xs text-slate-600 flex items-center gap-1">
+        <span id="espn-dot" class="inline-block w-1.5 h-1.5 rounded-full bg-slate-600"></span>
+        <span id="espn-label">Loading…</span>
+      </span>
     </div>
 
-    <!-- Live data fetched from ESPN -->
     <div id="espn-standings">
-      <!-- Fallback: computed from our own match results -->
-      {% if standings %}
-        {% for group, teams in standings.items() %}
-        <div class="card p-0 overflow-hidden">
-          <div class="px-3 py-2 flex items-center justify-between"
-               style="background:linear-gradient(135deg,#111f35,#0d1929);border-bottom:1px solid #1a3055;">
-            <span class="text-xs font-black uppercase tracking-widest" style="color:#00e676;">{{ group }}</span>
-            <span class="text-xs text-slate-600">P W D L Pts</span>
-          </div>
-          <table class="w-full text-xs">
-            <tbody>
-              {% for t in teams %}
-              <tr class="{% if not loop.last %}border-b{% endif %}"
-                  style="border-color:#0f1929;">
-                <td class="px-2 py-1.5 w-5 text-slate-500 font-700">{{ loop.index }}</td>
-                <td class="px-1 py-1.5">
-                  {% set tf = flag_url(t.team) %}
-                  {% if tf %}
-                  <img src="{{ tf }}" alt="{{ t.team }}" class="w-4 h-3 object-cover rounded inline mr-1" loading="lazy"/>
-                  {% endif %}
-                  <span class="font-700 text-slate-200 text-xs">{{ t.team }}</span>
-                </td>
-                <td class="px-1 py-1.5 text-center text-slate-400">{{ t.P }}</td>
-                <td class="px-1 py-1.5 text-center text-slate-400">{{ t.W }}</td>
-                <td class="px-1 py-1.5 text-center text-slate-400">{{ t.D }}</td>
-                <td class="px-1 py-1.5 text-center text-slate-400">{{ t.L }}</td>
-                <td class="px-2 py-1.5 text-center font-black text-xs
-                  {% if loop.index <= 2 %}text-green-400{% else %}text-slate-300{% endif %}">
-                  {{ t.Pts }}
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+      <!-- Skeleton while loading -->
+      {% for _ in range(4) %}
+      <div class="card overflow-hidden mb-3 animate-pulse">
+        <div class="px-3 py-2" style="background:#111f35;border-bottom:1px solid #1a3055;">
+          <div class="h-3 w-16 rounded" style="background:#1a3055;"></div>
+        </div>
+        {% for _ in range(4) %}
+        <div class="flex items-center gap-2 px-3 py-2" style="border-bottom:1px solid #0f1929;">
+          <div class="h-2 w-4 rounded" style="background:#1a3055;"></div>
+          <div class="h-2 flex-1 rounded" style="background:#1a3055;"></div>
+          <div class="h-2 w-12 rounded" style="background:#1a3055;"></div>
         </div>
         {% endfor %}
-      {% else %}
-        <div class="card p-4 text-center text-slate-500 text-xs">
-          Group standings appear here once matches begin.
-        </div>
-      {% endif %}
+      </div>
+      {% endfor %}
     </div>
 
-    <p class="text-xs text-slate-700 text-center pb-2">Top 2 per group advance · <span style="color:#00e676;">●</span> Qualifying</p>
+    <p id="espn-footer" class="text-xs text-slate-700 text-center pb-2 hidden">
+      <span style="color:#00e676;">●</span> Qualifying &nbsp;·&nbsp; Live · ESPN
+    </p>
   </div>
 
 </div>
@@ -227,61 +207,106 @@ function tickAll() {
 }
 tickAll(); setInterval(tickAll, 1000);
 
-/* Try to enrich standings from ESPN public API */
+/* ── ESPN Live Group Standings ── */
+const ESPN_URLS = [
+  'https://site.api.espn.com/apis/v2/sports/soccer/fifa.world/standings',
+  'https://site.api.espn.com/apis/v2/sports/soccer/fifa.worldcup/standings',
+  'https://site.api.espn.com/apis/v2/sports/soccer/FIFA.World/standings',
+];
+
+function setStatus(ok, label) {
+  const dot = document.getElementById('espn-dot');
+  const lbl = document.getElementById('espn-label');
+  if (dot) dot.style.background = ok ? '#00e676' : '#f87171';
+  if (lbl) lbl.textContent = label;
+}
+
+function buildGroupHTML(groups) {
+  let html = '';
+  for (const grp of groups) {
+    const name = grp.name || grp.abbreviation || '';
+    if (!name.toLowerCase().includes('group')) continue;
+    const entries = grp.standings?.entries || [];
+    if (!entries.length) continue;
+
+    const rows = entries.map(e => {
+      const stats = {};
+      (e.stats || []).forEach(s => { stats[s.abbreviation] = s.displayValue ?? s.value; });
+      return {
+        team:      e.team?.displayName || e.team?.name || '—',
+        flag:      e.team?.logos?.[0]?.href || '',
+        P:         stats['GP']  ?? stats['P']   ?? 0,
+        W:         stats['W']   ?? 0,
+        D:         stats['T']   ?? stats['D']   ?? 0,
+        L:         stats['L']   ?? 0,
+        GF:        stats['GF']  ?? stats['PF']  ?? '—',
+        GA:        stats['GA']  ?? 0,
+        GD:        stats['GD']  ?? stats['DIFF'] ?? '—',
+        Pts:       stats['PTS'] ?? stats['Pts'] ?? 0,
+        qualifying: (parseInt(e.note?.rank ?? e.rank ?? 99)) <= 2,
+      };
+    });
+
+    html += `
+    <div style="background:linear-gradient(135deg,#0d1929,#101e30);border:1px solid #1a3055;border-radius:12px;overflow:hidden;margin-bottom:.75rem;position:relative;">
+      <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#00e676,transparent);"></div>
+      <div style="padding:.5rem .75rem;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg,#111f35,#0d1929);border-bottom:1px solid #1a3055;">
+        <span style="font-size:.65rem;font-weight:900;text-transform:uppercase;letter-spacing:.08em;color:#00e676;">${name}</span>
+        <span style="font-size:.6rem;color:#334155;">P  W  D  L  Pts</span>
+      </div>
+      <table style="width:100%;font-size:.7rem;border-collapse:collapse;"><tbody>
+      ${rows.map((t,i) => `
+        <tr style="${i < rows.length-1 ? 'border-bottom:1px solid #0f1929;' : ''}${t.qualifying ? 'background:rgba(0,230,118,.04);' : ''}">
+          <td style="padding:.35rem .5rem;color:#64748b;font-weight:700;width:1.2rem;">${i+1}</td>
+          <td style="padding:.35rem .25rem;max-width:90px;overflow:hidden;">
+            ${t.flag ? `<img src="${t.flag}" style="width:1rem;height:.7rem;object-fit:cover;border-radius:2px;vertical-align:middle;margin-right:3px;" onerror="this.style.display='none'"/>` : ''}
+            <span style="font-weight:700;color:${t.qualifying ? '#e2e8f0' : '#94a3b8'};white-space:nowrap;">${t.team}</span>
+            ${t.qualifying ? '<span style="color:#00e676;font-size:.55rem;margin-left:2px;">●</span>' : ''}
+          </td>
+          <td style="padding:.35rem .2rem;text-align:center;color:#64748b;">${t.P}</td>
+          <td style="padding:.35rem .2rem;text-align:center;color:#64748b;">${t.W}</td>
+          <td style="padding:.35rem .2rem;text-align:center;color:#64748b;">${t.D}</td>
+          <td style="padding:.35rem .2rem;text-align:center;color:#64748b;">${t.L}</td>
+          <td style="padding:.35rem .5rem;text-align:center;font-weight:900;color:${t.qualifying ? '#4ade80' : '#cbd5e1'};">${t.Pts}</td>
+        </tr>`).join('')}
+      </tbody></table>
+    </div>`;
+  }
+  return html;
+}
+
+async function fetchStandings() {
+  for (const url of ESPN_URLS) {
+    try {
+      const r = await fetch(url, { signal: AbortSignal.timeout(6000) });
+      if (!r.ok) continue;
+      const data = await r.json();
+      const groups = data?.children || data?.standings?.groups || [];
+      if (!groups.length) continue;
+      const html = buildGroupHTML(groups);
+      if (!html) continue;
+
+      document.getElementById('espn-standings').innerHTML = html;
+      document.getElementById('espn-footer')?.classList.remove('hidden');
+      setStatus(true, 'Live · ESPN');
+      return true;
+    } catch (_) { /* try next URL */ }
+  }
+  return false;
+}
+
 (async () => {
-  try {
-    const r = await fetch('https://site.api.espn.com/apis/v2/sports/soccer/fifa.world/standings', {signal: AbortSignal.timeout(5000)});
-    if (!r.ok) return;
-    const data = await r.json();
-    const groups = data?.children;
-    if (!groups || !groups.length) return;
-
-    const panel = document.getElementById('espn-standings');
-    let html = '';
-    for (const grp of groups) {
-      const name = grp.abbreviation || grp.name || '';
-      if (!name.startsWith('Group')) continue;
-      const entries = grp.standings?.entries || [];
-      if (!entries.length) continue;
-
-      const rows = entries.map(e => {
-        const stats = {};
-        (e.stats || []).forEach(s => stats[s.abbreviation || s.name] = s.displayValue ?? s.value);
-        const team = e.team?.displayName || e.team?.name || '—';
-        const flag = e.team?.logos?.[0]?.href || '';
-        const P = stats['GP'] ?? stats['P'] ?? 0;
-        const W = stats['W'] ?? 0, D = stats['T'] ?? stats['D'] ?? 0, L = stats['L'] ?? 0;
-        const Pts = stats['PTS'] ?? stats['Pts'] ?? 0;
-        const qualifying = parseInt(e.note?.rank ?? e.rank ?? 99) <= 2;
-        return {team, flag, P, W, D, L, Pts, qualifying};
-      });
-
-      html += `
-      <div class="card overflow-hidden" style="margin-bottom:.75rem;">
-        <div class="px-3 py-2 flex items-center justify-between"
-             style="background:linear-gradient(135deg,#111f35,#0d1929);border-bottom:1px solid #1a3055;">
-          <span class="text-xs font-black uppercase tracking-widest" style="color:#00e676;">${name}</span>
-          <span class="text-xs" style="color:#334155;">P W D L Pts</span>
-        </div>
-        <table class="w-full text-xs"><tbody>
-        ${rows.map((t,i) => `
-          <tr style="${i < rows.length-1 ? 'border-bottom:1px solid #0f1929;' : ''}">
-            <td style="padding:.375rem .5rem;color:#64748b;font-weight:700;width:1.25rem;">${i+1}</td>
-            <td style="padding:.375rem .25rem;">
-              ${t.flag ? `<img src="${t.flag}" style="width:1rem;height:.75rem;object-fit:cover;border-radius:2px;display:inline;margin-right:4px;" loading="lazy"/>` : ''}
-              <span style="font-weight:700;color:${t.qualifying ? '#e2e8f0' : '#94a3b8'};">${t.team}</span>
-            </td>
-            <td style="padding:.375rem .25rem;text-align:center;color:#64748b;">${t.P}</td>
-            <td style="padding:.375rem .25rem;text-align:center;color:#64748b;">${t.W}</td>
-            <td style="padding:.375rem .25rem;text-align:center;color:#64748b;">${t.D}</td>
-            <td style="padding:.375rem .25rem;text-align:center;color:#64748b;">${t.L}</td>
-            <td style="padding:.375rem .5rem;text-align:center;font-weight:900;font-size:.75rem;color:${t.qualifying ? '#4ade80' : '#cbd5e1'};">${t.Pts}</td>
-          </tr>`).join('')}
-        </tbody></table>
+  const ok = await fetchStandings();
+  if (!ok) {
+    setStatus(false, 'Unavailable');
+    document.getElementById('espn-standings').innerHTML =
+      `<div style="background:#0d1929;border:1px solid #1a3055;border-radius:12px;padding:1.5rem;text-align:center;color:#64748b;font-size:.75rem;">
+        ESPN standings unavailable.<br/>Data will appear once the tournament begins.
       </div>`;
-    }
-    if (html) panel.innerHTML = html + '<p style="font-size:.65rem;color:#334155;text-align:center;padding-bottom:.5rem;">Live · ESPN</p>';
-  } catch(_) { /* silently fall back to server-rendered standings */ }
+  }
 })();
+
+/* Auto-refresh standings every 3 minutes */
+setInterval(fetchStandings, 3 * 60 * 1000);
 </script>
 {% endblock %}
