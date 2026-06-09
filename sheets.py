@@ -347,6 +347,50 @@ def award_points(match_code: str, actual_home: int, actual_away: int):
     _bust("predictions")
 
 
+_GROUP_ORDER = [f"Group {c}" for c in "ABCDEFGHIJKL"]
+
+
+def get_group_standings() -> dict[str, list[dict]]:
+    """Compute group stage standings from completed matches in our sheet."""
+    matches = get_all_matches()
+    groups: dict[str, dict[str, dict]] = {}
+
+    for m in matches:
+        if not m["stage"].startswith("Group "):
+            continue
+        g = m["stage"]
+        if g not in groups:
+            groups[g] = {}
+        for team in (m["home_team"], m["away_team"]):
+            if team and team != "TBD" and team not in groups[g]:
+                groups[g][team] = {"team": team, "P": 0, "W": 0, "D": 0, "L": 0,
+                                   "GF": 0, "GA": 0, "GD": 0, "Pts": 0}
+        if not m["is_completed"]:
+            continue
+        hs, as_ = m["home_score"], m["away_score"]
+        ht, at = m["home_team"], m["away_team"]
+        for team, gf, ga in ((ht, hs, as_), (at, as_, hs)):
+            if team in groups[g]:
+                groups[g][team]["P"]  += 1
+                groups[g][team]["GF"] += gf
+                groups[g][team]["GA"] += ga
+                groups[g][team]["GD"]  = groups[g][team]["GF"] - groups[g][team]["GA"]
+        if hs > as_:
+            groups[g][ht]["W"] += 1; groups[g][ht]["Pts"] += 3; groups[g][at]["L"] += 1
+        elif hs < as_:
+            groups[g][at]["W"] += 1; groups[g][at]["Pts"] += 3; groups[g][ht]["L"] += 1
+        else:
+            groups[g][ht]["D"] += 1; groups[g][ht]["Pts"] += 1
+            groups[g][at]["D"] += 1; groups[g][at]["Pts"] += 1
+
+    result = {}
+    for g in _GROUP_ORDER:
+        if g in groups:
+            result[g] = sorted(groups[g].values(),
+                               key=lambda x: (-x["Pts"], -x["GD"], -x["GF"], x["team"]))
+    return result
+
+
 def get_leaderboard() -> list[dict]:
     """Return users sorted by total points."""
     preds = get_all_predictions()

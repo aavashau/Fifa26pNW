@@ -302,8 +302,10 @@ def fixtures_page(request: Request):
 
     stages = [(s, grouped[s]) for s in stage_order if s in grouped]
 
+    standings = sheets.get_group_standings()
+
     return templates.TemplateResponse("fixtures.html", {
-        "request": request, "user": user, "stages": stages,
+        "request": request, "user": user, "stages": stages, "standings": standings,
     })
 
 

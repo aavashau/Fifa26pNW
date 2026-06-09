@@ -13,128 +13,184 @@
   </div>
 </div>
 
-<!-- Stage navigation pills -->
-<div class="flex flex-wrap gap-2 mb-8">
+<!-- Stage nav pills -->
+<div class="flex flex-wrap gap-2 mb-6">
   {% for stage, _ in stages %}
   <button onclick="scrollToStage('{{ stage | replace(' ', '_') }}')"
-          class="text-xs px-3 py-1.5 rounded-full font-600 transition-all"
-          style="border:1px solid #1a3055;color:#64748b;background:#0d1929;"
-          onmouseover="this.style.borderColor='#00e676';this.style.color='#00e676';"
-          onmouseout="this.style.borderColor='#1a3055';this.style.color='#64748b';">
+          class="stage-pill text-xs px-3 py-1.5 rounded-full font-600 transition-all"
+          style="border:1px solid #1a3055;color:#64748b;background:#0d1929;">
     {{ stage }}
   </button>
   {% endfor %}
 </div>
 
-{% for stage, matches in stages %}
-<div id="stage_{{ stage | replace(' ','_') }}" class="mb-10">
-  <div class="flex items-center gap-3 mb-3">
-    <h2 class="text-xs font-black uppercase tracking-widest text-slate-400">{{ stage }}</h2>
-    <div class="flex-1 h-px" style="background:linear-gradient(90deg,#1a3055,transparent)"></div>
-    <span class="text-xs text-slate-600 font-600">{{ matches | length }}</span>
-  </div>
+<!-- Two-column layout -->
+<div class="flex gap-6 items-start">
 
-  <div class="space-y-2">
-    {% for m in matches %}
-    <div class="card match-{{ 'completed' if m.is_completed else m.status }} px-4 py-3
-                flex flex-col sm:flex-row sm:items-center gap-3">
-
-      <!-- Teams & info -->
-      <div class="flex-1 min-w-0">
-        <div class="flex items-center gap-2 mb-2">
-          <span class="text-xs text-slate-600 font-600">{{ m.match_code }}</span>
-          {% if m.is_completed %}
-            <span class="badge badge-completed">FT</span>
-          {% else %}
-            <span class="badge badge-{{ m.status }}">{{ m.status }}</span>
-          {% endif %}
-          {% if m.venue %}
-          <span class="text-xs text-slate-600 truncate hidden sm:block">· 📍 {{ m.venue }}</span>
-          {% endif %}
-        </div>
-
-        <!-- Teams with flags -->
-        <div class="flex items-center gap-2 font-800 text-sm flex-wrap mb-1.5">
-          <div class="flex items-center gap-1.5 shrink-0">
-            {% set hf = flag_url(m.home_team) %}
-            {% if hf %}<img src="{{ hf }}" alt="{{ m.home_team }}" class="w-6 h-4 object-cover rounded shadow" loading="lazy"/>{% endif %}
-            <span>{{ m.home_team }}</span>
-          </div>
-
-          {% if m.is_completed %}
-            <span class="font-black text-base px-2" style="color:#fbbf24;">{{ m.home_score }} – {{ m.away_score }}</span>
-          {% else %}
-            <span class="text-slate-600 text-xs font-500 px-1">vs</span>
-          {% endif %}
-
-          <div class="flex items-center gap-1.5 shrink-0">
-            {% set af = flag_url(m.away_team) %}
-            {% if af %}<img src="{{ af }}" alt="{{ m.away_team }}" class="w-6 h-4 object-cover rounded shadow" loading="lazy"/>{% endif %}
-            <span>{{ m.away_team }}</span>
-          </div>
-        </div>
-
-        <div class="text-xs text-slate-500">
-          🕐 {{ m.npt_time.strftime('%d %b · %I:%M %p') }} NPT
-        </div>
-
-        {% if m.notes and m.home_team == 'TBD' %}
-        <div class="text-xs text-slate-600 mt-0.5 italic">{{ m.notes }}</div>
-        {% endif %}
-
-        <!-- Countdown -->
-        {% if not m.is_completed %}
-        <div class="mt-1.5">
-          {% if m.status == 'open' %}
-            <div class="flex items-center gap-1.5">
-              <span class="text-xs font-700" style="color:#00e676;">⏳ Closes in</span>
-              <span class="countdown font-mono text-xs font-black" style="color:#00e676;"
-                    data-target="{{ (m.match_time_utc.timestamp() - 3600)|int }}"
-                    data-type="close">--:--:--</span>
-            </div>
-          {% elif m.status == 'upcoming' and m.home_team != 'TBD' %}
-            <div class="flex items-center gap-1.5">
-              <span class="text-xs text-slate-500">⏱ Kickoff in</span>
-              <span class="countdown font-mono text-xs font-black text-blue-400"
-                    data-target="{{ m.match_time_utc.timestamp()|int }}"
-                    data-type="kickoff">--d --h --m</span>
-            </div>
-          {% elif m.status == 'closed' %}
-            <div class="text-xs text-slate-600 italic">Match starting soon</div>
-          {% endif %}
-        </div>
-        {% endif %}
+  <!-- ── LEFT: Fixtures list ── -->
+  <div class="flex-1 min-w-0 space-y-10">
+    {% for stage, matches in stages %}
+    <div id="stage_{{ stage | replace(' ','_') }}">
+      <div class="flex items-center gap-3 mb-3">
+        <h2 class="text-xs font-black uppercase tracking-widest text-slate-400">{{ stage }}</h2>
+        <div class="flex-1 h-px" style="background:linear-gradient(90deg,#1a3055,transparent)"></div>
+        <span class="text-xs text-slate-600 font-600">{{ matches | length }}</span>
       </div>
 
-      <!-- Prediction column -->
-      <div class="flex items-center gap-3 shrink-0">
-        {% if m.user_prediction %}
-          <div class="text-center px-3 py-1.5 rounded-lg" style="background:#0d1929;border:1px solid #1a3055;">
-            <div class="text-xs text-slate-500 mb-0.5">Your pick</div>
-            <div class="font-black text-sm
-              {% if m.user_prediction.points_earned == 3 %}text-yellow-400
-              {% elif m.user_prediction.points_earned == 1 %}text-green-400
-              {% elif m.user_prediction.points_earned == 0 %}text-red-400
-              {% else %}text-white{% endif %}">
-              {{ m.user_prediction.home_score }} – {{ m.user_prediction.away_score }}
-              {% if m.user_prediction.points_earned is not none %}
-                <span class="text-xs ml-1">(+{{ m.user_prediction.points_earned }})</span>
+      <div class="space-y-2">
+        {% for m in matches %}
+        <div class="card match-{{ 'completed' if m.is_completed else m.status }} px-4 py-3
+                    flex flex-col sm:flex-row sm:items-center gap-3">
+
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="text-xs text-slate-600 font-600">{{ m.match_code }}</span>
+              {% if m.is_completed %}
+                <span class="badge badge-completed">FT</span>
+              {% else %}
+                <span class="badge badge-{{ m.status }}">{{ m.status }}</span>
+              {% endif %}
+              {% if m.venue %}
+              <span class="text-xs text-slate-600 truncate hidden sm:block">· 📍 {{ m.venue }}</span>
               {% endif %}
             </div>
-          </div>
-        {% endif %}
 
-        {% if m.status == 'open' %}
-          <a href="/predict/{{ m.match_code }}" class="btn-primary text-xs">
-            {% if m.user_prediction %}Edit{% else %}Predict{% endif %}
-          </a>
-        {% endif %}
+            <!-- Teams with flags -->
+            <div class="flex items-center gap-2 font-800 text-sm flex-wrap mb-1.5">
+              <div class="flex items-center gap-1.5 shrink-0">
+                {% set hf = flag_url(m.home_team) %}
+                {% if hf %}<img src="{{ hf }}" alt="{{ m.home_team }}" class="w-6 h-4 object-cover rounded shadow" loading="lazy"/>{% endif %}
+                <span>{{ m.home_team }}</span>
+              </div>
+              {% if m.is_completed %}
+                <span class="font-black text-base px-2" style="color:#fbbf24;">{{ m.home_score }} – {{ m.away_score }}</span>
+              {% else %}
+                <span class="text-slate-600 text-xs font-500 px-1">vs</span>
+              {% endif %}
+              <div class="flex items-center gap-1.5 shrink-0">
+                {% set af = flag_url(m.away_team) %}
+                {% if af %}<img src="{{ af }}" alt="{{ m.away_team }}" class="w-6 h-4 object-cover rounded shadow" loading="lazy"/>{% endif %}
+                <span>{{ m.away_team }}</span>
+              </div>
+            </div>
+
+            <div class="text-xs text-slate-500">
+              🕐 {{ m.npt_time.strftime('%d %b · %I:%M %p') }} NPT
+            </div>
+
+            {% if m.notes and m.home_team == 'TBD' %}
+            <div class="text-xs text-slate-600 mt-0.5 italic">{{ m.notes }}</div>
+            {% endif %}
+
+            <!-- Countdown -->
+            {% if not m.is_completed %}
+            <div class="mt-1.5">
+              {% if m.status == 'open' %}
+                <div class="flex items-center gap-1.5">
+                  <span class="text-xs font-700" style="color:#00e676;">⏳ Closes in</span>
+                  <span class="countdown font-mono text-xs font-black" style="color:#00e676;"
+                        data-target="{{ (m.match_time_utc.timestamp() - 3600)|int }}"
+                        data-type="close">--:--:--</span>
+                </div>
+              {% elif m.status == 'upcoming' and m.home_team != 'TBD' %}
+                <div class="flex items-center gap-1.5">
+                  <span class="text-xs text-slate-500">⏱ Kickoff in</span>
+                  <span class="countdown font-mono text-xs font-black text-blue-400"
+                        data-target="{{ m.match_time_utc.timestamp()|int }}"
+                        data-type="kickoff">--d --h --m</span>
+                </div>
+              {% elif m.status == 'closed' %}
+                <div class="text-xs text-slate-600 italic">Match starting soon</div>
+              {% endif %}
+            </div>
+            {% endif %}
+          </div>
+
+          <!-- Prediction -->
+          <div class="flex items-center gap-3 shrink-0">
+            {% if m.user_prediction %}
+              <div class="text-center px-3 py-1.5 rounded-lg" style="background:#0d1929;border:1px solid #1a3055;">
+                <div class="text-xs text-slate-500 mb-0.5">Your pick</div>
+                <div class="font-black text-sm
+                  {% if m.user_prediction.points_earned == 3 %}text-yellow-400
+                  {% elif m.user_prediction.points_earned == 1 %}text-green-400
+                  {% elif m.user_prediction.points_earned == 0 %}text-red-400
+                  {% else %}text-white{% endif %}">
+                  {{ m.user_prediction.home_score }} – {{ m.user_prediction.away_score }}
+                  {% if m.user_prediction.points_earned is not none %}
+                    <span class="text-xs ml-1">(+{{ m.user_prediction.points_earned }})</span>
+                  {% endif %}
+                </div>
+              </div>
+            {% endif %}
+            {% if m.status == 'open' %}
+              <a href="/predict/{{ m.match_code }}" class="btn-primary text-xs">
+                {% if m.user_prediction %}Edit{% else %}Predict{% endif %}
+              </a>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
       </div>
     </div>
     {% endfor %}
   </div>
+
+  <!-- ── RIGHT: Group Standings ── -->
+  <div class="hidden lg:block w-72 shrink-0 space-y-3 sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto pr-1" id="standings-panel">
+    <div class="flex items-center gap-2 mb-2">
+      <h2 class="text-xs font-black uppercase tracking-widest text-slate-400">Group Standings</h2>
+    </div>
+
+    <!-- Live data fetched from ESPN -->
+    <div id="espn-standings">
+      <!-- Fallback: computed from our own match results -->
+      {% if standings %}
+        {% for group, teams in standings.items() %}
+        <div class="card p-0 overflow-hidden">
+          <div class="px-3 py-2 flex items-center justify-between"
+               style="background:linear-gradient(135deg,#111f35,#0d1929);border-bottom:1px solid #1a3055;">
+            <span class="text-xs font-black uppercase tracking-widest" style="color:#00e676;">{{ group }}</span>
+            <span class="text-xs text-slate-600">P W D L Pts</span>
+          </div>
+          <table class="w-full text-xs">
+            <tbody>
+              {% for t in teams %}
+              <tr class="{% if not loop.last %}border-b{% endif %}"
+                  style="border-color:#0f1929;">
+                <td class="px-2 py-1.5 w-5 text-slate-500 font-700">{{ loop.index }}</td>
+                <td class="px-1 py-1.5">
+                  {% set tf = flag_url(t.team) %}
+                  {% if tf %}
+                  <img src="{{ tf }}" alt="{{ t.team }}" class="w-4 h-3 object-cover rounded inline mr-1" loading="lazy"/>
+                  {% endif %}
+                  <span class="font-700 text-slate-200 text-xs">{{ t.team }}</span>
+                </td>
+                <td class="px-1 py-1.5 text-center text-slate-400">{{ t.P }}</td>
+                <td class="px-1 py-1.5 text-center text-slate-400">{{ t.W }}</td>
+                <td class="px-1 py-1.5 text-center text-slate-400">{{ t.D }}</td>
+                <td class="px-1 py-1.5 text-center text-slate-400">{{ t.L }}</td>
+                <td class="px-2 py-1.5 text-center font-black text-xs
+                  {% if loop.index <= 2 %}text-green-400{% else %}text-slate-300{% endif %}">
+                  {{ t.Pts }}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="card p-4 text-center text-slate-500 text-xs">
+          Group standings appear here once matches begin.
+        </div>
+      {% endif %}
+    </div>
+
+    <p class="text-xs text-slate-700 text-center pb-2">Top 2 per group advance · <span style="color:#00e676;">●</span> Qualifying</p>
+  </div>
+
 </div>
-{% endfor %}
 
 <script>
 function scrollToStage(id) {
@@ -142,21 +198,26 @@ function scrollToStage(id) {
   if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
+/* Stage pill hover */
+document.querySelectorAll('.stage-pill').forEach(btn => {
+  btn.addEventListener('mouseenter', () => { btn.style.borderColor='#00e676'; btn.style.color='#00e676'; });
+  btn.addEventListener('mouseleave', () => { btn.style.borderColor='#1a3055'; btn.style.color='#64748b'; });
+});
+
+/* Countdown */
 function formatCountdown(s) {
   if (s <= 0) return null;
-  const d = Math.floor(s/86400), h = Math.floor((s%86400)/3600),
-        m = Math.floor((s%3600)/60), sec = s%60;
-  if (d > 0) return `${d}d ${String(h).padStart(2,'0')}h ${String(m).padStart(2,'0')}m ${String(sec).padStart(2,'0')}s`;
-  if (h > 0) return `${String(h).padStart(2,'0')}h ${String(m).padStart(2,'0')}m ${String(sec).padStart(2,'0')}s`;
+  const d=Math.floor(s/86400),h=Math.floor((s%86400)/3600),m=Math.floor((s%3600)/60),sec=s%60;
+  if (d>0) return `${d}d ${String(h).padStart(2,'0')}h ${String(m).padStart(2,'0')}m ${String(sec).padStart(2,'0')}s`;
+  if (h>0) return `${String(h).padStart(2,'0')}h ${String(m).padStart(2,'0')}m ${String(sec).padStart(2,'0')}s`;
   return `${String(m).padStart(2,'0')}m ${String(sec).padStart(2,'0')}s`;
 }
-
 function tickAll() {
   const now = Math.floor(Date.now()/1000);
   document.querySelectorAll('.countdown').forEach(el => {
     const left = parseInt(el.dataset.target,10) - now;
     if (left <= 0) {
-      el.textContent = el.dataset.type === 'close' ? 'CLOSED' : 'KICKED OFF';
+      el.textContent = el.dataset.type==='close' ? 'CLOSED' : 'KICKED OFF';
       if (left > -5) setTimeout(() => location.reload(), 1500);
       return;
     }
@@ -165,5 +226,62 @@ function tickAll() {
   });
 }
 tickAll(); setInterval(tickAll, 1000);
+
+/* Try to enrich standings from ESPN public API */
+(async () => {
+  try {
+    const r = await fetch('https://site.api.espn.com/apis/v2/sports/soccer/fifa.world/standings', {signal: AbortSignal.timeout(5000)});
+    if (!r.ok) return;
+    const data = await r.json();
+    const groups = data?.children;
+    if (!groups || !groups.length) return;
+
+    const panel = document.getElementById('espn-standings');
+    let html = '';
+    for (const grp of groups) {
+      const name = grp.abbreviation || grp.name || '';
+      if (!name.startsWith('Group')) continue;
+      const entries = grp.standings?.entries || [];
+      if (!entries.length) continue;
+
+      const rows = entries.map(e => {
+        const stats = {};
+        (e.stats || []).forEach(s => stats[s.abbreviation || s.name] = s.displayValue ?? s.value);
+        const team = e.team?.displayName || e.team?.name || '—';
+        const flag = e.team?.logos?.[0]?.href || '';
+        const P = stats['GP'] ?? stats['P'] ?? 0;
+        const W = stats['W'] ?? 0, D = stats['T'] ?? stats['D'] ?? 0, L = stats['L'] ?? 0;
+        const Pts = stats['PTS'] ?? stats['Pts'] ?? 0;
+        const qualifying = parseInt(e.note?.rank ?? e.rank ?? 99) <= 2;
+        return {team, flag, P, W, D, L, Pts, qualifying};
+      });
+
+      html += `
+      <div class="card overflow-hidden" style="margin-bottom:.75rem;">
+        <div class="px-3 py-2 flex items-center justify-between"
+             style="background:linear-gradient(135deg,#111f35,#0d1929);border-bottom:1px solid #1a3055;">
+          <span class="text-xs font-black uppercase tracking-widest" style="color:#00e676;">${name}</span>
+          <span class="text-xs" style="color:#334155;">P W D L Pts</span>
+        </div>
+        <table class="w-full text-xs"><tbody>
+        ${rows.map((t,i) => `
+          <tr style="${i < rows.length-1 ? 'border-bottom:1px solid #0f1929;' : ''}">
+            <td style="padding:.375rem .5rem;color:#64748b;font-weight:700;width:1.25rem;">${i+1}</td>
+            <td style="padding:.375rem .25rem;">
+              ${t.flag ? `<img src="${t.flag}" style="width:1rem;height:.75rem;object-fit:cover;border-radius:2px;display:inline;margin-right:4px;" loading="lazy"/>` : ''}
+              <span style="font-weight:700;color:${t.qualifying ? '#e2e8f0' : '#94a3b8'};">${t.team}</span>
+            </td>
+            <td style="padding:.375rem .25rem;text-align:center;color:#64748b;">${t.P}</td>
+            <td style="padding:.375rem .25rem;text-align:center;color:#64748b;">${t.W}</td>
+            <td style="padding:.375rem .25rem;text-align:center;color:#64748b;">${t.D}</td>
+            <td style="padding:.375rem .25rem;text-align:center;color:#64748b;">${t.L}</td>
+            <td style="padding:.375rem .5rem;text-align:center;font-weight:900;font-size:.75rem;color:${t.qualifying ? '#4ade80' : '#cbd5e1'};">${t.Pts}</td>
+          </tr>`).join('')}
+        </tbody></table>
+      </div>`;
+    }
+    if (html) panel.innerHTML = html + '<p style="font-size:.65rem;color:#334155;text-align:center;padding-bottom:.5rem;">Live · ESPN</p>';
+  } catch(_) { /* silently fall back to server-rendered standings */ }
+})();
 </script>
 {% endblock %}
