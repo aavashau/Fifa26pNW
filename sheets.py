@@ -13,15 +13,18 @@ import re
 
 
 def _parse_credentials_json(raw: str) -> dict:
-    """Parse GOOGLE_CREDENTIALS_JSON robustly — handles Railway's newline mangling."""
+    """Parse GOOGLE_CREDENTIALS_JSON robustly — handles Railway/Render env var mangling."""
+    raw = raw.strip()
+    # Strip surrounding quotes if copied from .env file format: GOOGLE_CREDENTIALS_JSON="..."
+    if raw.startswith('"') and raw.endswith('"'):
+        raw = raw[1:-1].replace('\\"', '"')
     # Try direct parse first
     try:
         return json.loads(raw)
     except json.JSONDecodeError:
         pass
-    # Railway sometimes turns \n escape sequences into literal newlines inside
+    # Some platforms turn \n escape sequences into literal newlines inside
     # the private_key string value, making the JSON invalid.
-    # Fix: escape literal newlines only within the private_key value.
     fixed = re.sub(
         r'("private_key"\s*:\s*")(.*?)(")',
         lambda m: m.group(1) + m.group(2).replace('\n', '\\n').replace('\r', '') + m.group(3),
