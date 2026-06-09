@@ -21,7 +21,9 @@ async def send_invite_email(to_email: str, invite_link: str, inviter_name: str =
 <body style="font-family:Arial,sans-serif;background:#0f1117;color:#fff;margin:0;padding:20px;">
   <div style="max-width:540px;margin:0 auto;background:#1a1f2e;border-radius:12px;padding:40px;border:1px solid #2d3748;">
     <div style="text-align:center;margin-bottom:30px;">
-      <span style="font-size:48px;">&#x26BD;</span>
+      <img src="https://m.media-amazon.com/images/M/MV5BNzk0NGIyMTctNmRkZi00ODQ0LWFhYjMtZDlmOTI3Y2JjMTRhXkEyXkFqcGc@.jpg"
+           alt="FIFA World Cup 2026" width="80" height="80"
+           style="border-radius:12px;object-fit:contain;display:block;margin:0 auto 12px;"/>
       <h1 style="color:#FFD700;margin:10px 0;font-size:24px;">FIFA World Cup 2026</h1>
       <h2 style="color:#00c853;margin:0;font-size:18px;">Score Predictor</h2>
     </div>
