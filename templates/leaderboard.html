@@ -1,63 +1,86 @@
 {% extends "base.html" %}
 {% set active = "leaderboard" %}
-{% block title %}Leaderboard · FWC 2026{% endblock %}
+{% block title %}Leaderboard · FIFA WC 2026{% endblock %}
 
 {% block content %}
-<h1 class="text-2xl font-black mb-2">Leaderboard</h1>
-<p class="text-gray-500 text-sm mb-8">
-  🎯 Exact score = 3 pts &nbsp;·&nbsp; ✓ Correct outcome = 1 pt
+<div class="flex items-center gap-3 mb-2">
+  <h1 class="text-2xl font-black uppercase tracking-widest text-slate-200">Leaderboard</h1>
+  <div class="flex-1 h-px" style="background:linear-gradient(90deg,#1a3055,transparent)"></div>
+</div>
+<p class="text-slate-500 text-xs mb-8 uppercase tracking-widest">
+  🎯 Exact score = <span style="color:#fbbf24;" class="font-black">3 pts</span>
+  &nbsp;·&nbsp;
+  ✓ Correct outcome = <span style="color:#00e676;" class="font-black">1 pt</span>
 </p>
 
 {% if board %}
 <div class="card overflow-hidden">
   <table class="w-full text-sm">
     <thead>
-      <tr class="border-b border-border text-xs text-gray-500 uppercase tracking-wide">
-        <th class="py-3 px-4 text-left w-12">Rank</th>
-        <th class="py-3 px-4 text-left">Player</th>
-        <th class="py-3 px-4 text-center">Predictions</th>
-        <th class="py-3 px-4 text-right">Points</th>
+      <tr style="border-bottom:1px solid #1a3055;">
+        <th class="py-3 px-4 text-left w-16 text-xs text-slate-500 uppercase tracking-widest font-700">Rank</th>
+        <th class="py-3 px-4 text-left text-xs text-slate-500 uppercase tracking-widest font-700">Player</th>
+        <th class="py-3 px-4 text-center text-xs text-slate-500 uppercase tracking-widest font-700">Preds</th>
+        <th class="py-3 px-4 text-right text-xs text-slate-500 uppercase tracking-widest font-700">Points</th>
       </tr>
     </thead>
     <tbody>
       {% for row in board %}
-      <tr class="border-b border-border/50 transition-colors
-                 {% if row.user_id == user.id %}bg-primary/10{% else %}hover:bg-white/3{% endif %}">
-        <td class="py-3 px-4">
+      <tr style="border-bottom:1px solid rgba(26,48,85,.5);"
+          class="transition-colors
+            {% if row.rank == 1 %}rank-gold
+            {% elif row.rank == 2 %}rank-silver
+            {% elif row.rank == 3 %}rank-bronze
+            {% elif row.user_id == user.id %}{% else %}hover:bg-white/3{% endif %}"
+          {% if row.user_id == user.id %}style="border-bottom:1px solid rgba(26,48,85,.5);background:rgba(0,230,118,.05);"{% endif %}>
+
+        <td class="py-3.5 px-4">
           {% if row.rank == 1 %}
-            <span class="text-xl">🥇</span>
+            <span class="text-2xl">🥇</span>
           {% elif row.rank == 2 %}
-            <span class="text-xl">🥈</span>
+            <span class="text-2xl">🥈</span>
           {% elif row.rank == 3 %}
-            <span class="text-xl">🥉</span>
+            <span class="text-2xl">🥉</span>
           {% else %}
-            <span class="text-gray-500 font-mono">#{{ row.rank }}</span>
+            <span class="text-slate-500 font-mono font-700 text-xs">#{{ row.rank }}</span>
           {% endif %}
         </td>
-        <td class="py-3 px-4 font-semibold">
-          {{ row.username }}
-          {% if row.user_id == user.id %}
-            <span class="text-xs text-primary ml-1">(you)</span>
-          {% endif %}
+
+        <td class="py-3.5 px-4">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black"
+                 style="background:linear-gradient(135deg,#1a3055,#0d1929);border:1px solid #1a3055;color:#94a3b8;">
+              {{ row.username[0].upper() }}
+            </div>
+            <span class="font-700">{{ row.username }}</span>
+            {% if row.user_id == user.id %}
+              <span class="text-xs font-700 px-1.5 py-0.5 rounded-full" style="background:rgba(0,230,118,.12);color:#00e676;border:1px solid rgba(0,230,118,.2);">you</span>
+            {% endif %}
+          </div>
         </td>
-        <td class="py-3 px-4 text-center text-gray-400">{{ row.predicted }}</td>
-        <td class="py-3 px-4 text-right">
+
+        <td class="py-3.5 px-4 text-center text-slate-400 font-600">{{ row.predicted }}</td>
+
+        <td class="py-3.5 px-4 text-right">
           <span class="font-black text-lg
-            {% if row.rank == 1 %}text-gold
-            {% elif row.rank <= 3 %}text-primary
-            {% else %}text-white{% endif %}">
+            {% if row.rank == 1 %}text-yellow-400
+            {% elif row.rank <= 3 %}text-green-400
+            {% elif row.user_id == user.id %}text-green-400
+            {% else %}text-slate-200{% endif %}">
             {{ row.points }}
           </span>
+          <span class="text-xs text-slate-600 ml-0.5">pts</span>
         </td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
 </div>
+
 {% else %}
-<div class="card p-12 text-center text-gray-500">
-  <div class="text-4xl mb-3">🏆</div>
-  <p>No results yet. Leaderboard updates after match scores are entered.</p>
+<div class="card p-14 text-center text-slate-500">
+  <div class="text-5xl mb-4">🏆</div>
+  <p class="font-600">No results yet. Leaderboard updates after match scores are entered.</p>
 </div>
 {% endif %}
 {% endblock %}

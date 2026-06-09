@@ -1,15 +1,15 @@
 {% extends "base.html" %}
 {% set active = "fixtures" %}
-{% block title %}Fixtures · FWC 2026{% endblock %}
+{% block title %}Fixtures · FIFA WC 2026{% endblock %}
 
 {% block content %}
-<div class="flex items-center justify-between mb-6">
-  <h1 class="text-2xl font-black">All Fixtures</h1>
+<div class="flex items-center justify-between mb-5">
+  <h1 class="text-2xl font-black uppercase tracking-widest text-slate-200">All Fixtures</h1>
   <div class="flex gap-2 text-xs">
     <span class="badge badge-open">Open</span>
     <span class="badge badge-upcoming">Upcoming</span>
     <span class="badge badge-closed">Closed</span>
-    <span class="badge badge-completed">Done</span>
+    <span class="badge badge-completed">FT</span>
   </div>
 </div>
 
@@ -17,8 +17,10 @@
 <div class="flex flex-wrap gap-2 mb-8">
   {% for stage, _ in stages %}
   <button onclick="scrollToStage('{{ stage | replace(' ', '_') }}')"
-          class="text-xs px-3 py-1 rounded-full border border-border text-gray-400
-                 hover:border-primary hover:text-primary transition-colors">
+          class="text-xs px-3 py-1.5 rounded-full font-600 transition-all"
+          style="border:1px solid #1a3055;color:#64748b;background:#0d1929;"
+          onmouseover="this.style.borderColor='#00e676';this.style.color='#00e676';"
+          onmouseout="this.style.borderColor='#1a3055';this.style.color='#64748b';">
     {{ stage }}
   </button>
   {% endfor %}
@@ -26,87 +28,79 @@
 
 {% for stage, matches in stages %}
 <div id="stage_{{ stage | replace(' ','_') }}" class="mb-10">
-  <div class="flex items-center gap-3 mb-4">
-    <h2 class="text-base font-bold text-gray-200">{{ stage }}</h2>
-    <div class="flex-1 h-px bg-border"></div>
-    <span class="text-xs text-gray-600">{{ matches | length }} matches</span>
+  <div class="flex items-center gap-3 mb-3">
+    <h2 class="text-xs font-black uppercase tracking-widest text-slate-400">{{ stage }}</h2>
+    <div class="flex-1 h-px" style="background:linear-gradient(90deg,#1a3055,transparent)"></div>
+    <span class="text-xs text-slate-600 font-600">{{ matches | length }}</span>
   </div>
 
   <div class="space-y-2">
     {% for m in matches %}
-    <div class="card px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3
-                {% if m.status == 'open' %}ring-1 ring-primary/30{% endif %}"
-         data-kickoff="{{ m.match_time_utc.isoformat() }}"
-         data-status="{{ 'completed' if m.is_completed else m.status }}"
-         data-code="{{ m.match_code }}">
+    <div class="card match-{{ 'completed' if m.is_completed else m.status }} px-4 py-3
+                flex flex-col sm:flex-row sm:items-center gap-3">
 
       <!-- Teams & info -->
       <div class="flex-1 min-w-0">
-        <div class="flex items-center gap-2 mb-1">
-          <span class="text-xs text-gray-600">{{ m.match_code }}</span>
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-xs text-slate-600 font-600">{{ m.match_code }}</span>
           {% if m.is_completed %}
             <span class="badge badge-completed">FT</span>
           {% else %}
             <span class="badge badge-{{ m.status }}">{{ m.status }}</span>
           {% endif %}
+          {% if m.venue %}
+          <span class="text-xs text-slate-600 truncate hidden sm:block">· 📍 {{ m.venue }}</span>
+          {% endif %}
         </div>
 
-        <div class="flex items-center gap-2 font-semibold text-sm sm:text-base flex-wrap">
-          <!-- Home team -->
+        <!-- Teams with flags -->
+        <div class="flex items-center gap-2 font-800 text-sm flex-wrap mb-1.5">
           <div class="flex items-center gap-1.5 shrink-0">
-            {% set home_flag = flag_url(m.home_team) %}
-            {% if home_flag %}
-            <img src="{{ home_flag }}" alt="{{ m.home_team }}"
-                 class="w-6 h-4 object-cover rounded-sm shadow" loading="lazy"/>
-            {% endif %}
+            {% set hf = flag_url(m.home_team) %}
+            {% if hf %}<img src="{{ hf }}" alt="{{ m.home_team }}" class="w-6 h-4 object-cover rounded shadow" loading="lazy"/>{% endif %}
             <span>{{ m.home_team }}</span>
           </div>
+
           {% if m.is_completed %}
-            <span class="text-gold font-black shrink-0">{{ m.home_score }} – {{ m.away_score }}</span>
+            <span class="font-black text-base px-2" style="color:#fbbf24;">{{ m.home_score }} – {{ m.away_score }}</span>
           {% else %}
-            <span class="text-gray-600 shrink-0 font-normal text-xs">vs</span>
+            <span class="text-slate-600 text-xs font-500 px-1">vs</span>
           {% endif %}
-          <!-- Away team -->
+
           <div class="flex items-center gap-1.5 shrink-0">
-            {% set away_flag = flag_url(m.away_team) %}
-            {% if away_flag %}
-            <img src="{{ away_flag }}" alt="{{ m.away_team }}"
-                 class="w-6 h-4 object-cover rounded-sm shadow" loading="lazy"/>
-            {% endif %}
+            {% set af = flag_url(m.away_team) %}
+            {% if af %}<img src="{{ af }}" alt="{{ m.away_team }}" class="w-6 h-4 object-cover rounded shadow" loading="lazy"/>{% endif %}
             <span>{{ m.away_team }}</span>
           </div>
         </div>
 
-        <div class="text-xs text-gray-500 mt-0.5">
+        <div class="text-xs text-slate-500">
           🕐 {{ m.npt_time.strftime('%d %b · %I:%M %p') }} NPT
-          {% if m.venue %} · 📍 {{ m.venue }}{% endif %}
         </div>
 
         {% if m.notes and m.home_team == 'TBD' %}
-        <div class="text-xs text-gray-600 mt-0.5 italic">{{ m.notes }}</div>
+        <div class="text-xs text-slate-600 mt-0.5 italic">{{ m.notes }}</div>
         {% endif %}
 
-        <!-- Countdown timer -->
+        <!-- Countdown -->
         {% if not m.is_completed %}
-        <div class="mt-1.5 countdown-wrap">
+        <div class="mt-1.5">
           {% if m.status == 'open' %}
             <div class="flex items-center gap-1.5">
-              <span class="text-xs text-primary font-medium">⏳ Predictions close in</span>
-              <span class="countdown font-mono text-xs font-bold text-primary"
-                    data-target="{{ (m.match_time_utc.timestamp() - 3600)|int }}">
-                --:--:--
-              </span>
+              <span class="text-xs font-700" style="color:#00e676;">⏳ Closes in</span>
+              <span class="countdown font-mono text-xs font-black" style="color:#00e676;"
+                    data-target="{{ (m.match_time_utc.timestamp() - 3600)|int }}"
+                    data-type="close">--:--:--</span>
             </div>
           {% elif m.status == 'upcoming' and m.home_team != 'TBD' %}
             <div class="flex items-center gap-1.5">
-              <span class="text-xs text-gray-500">⏱ Kickoff in</span>
-              <span class="countdown font-mono text-xs font-bold text-blue-400"
-                    data-target="{{ m.match_time_utc.timestamp()|int }}">
-                --d --h --m --s
-              </span>
+              <span class="text-xs text-slate-500">⏱ Kickoff in</span>
+              <span class="countdown font-mono text-xs font-black text-blue-400"
+                    data-target="{{ m.match_time_utc.timestamp()|int }}"
+                    data-type="kickoff">--d --h --m</span>
             </div>
-          {% elif m.status == 'closed' and not m.is_completed %}
-            <div class="text-xs text-gray-600 italic">Match in progress or about to start</div>
+          {% elif m.status == 'closed' %}
+            <div class="text-xs text-slate-600 italic">Match starting soon</div>
           {% endif %}
         </div>
         {% endif %}
@@ -115,16 +109,16 @@
       <!-- Prediction column -->
       <div class="flex items-center gap-3 shrink-0">
         {% if m.user_prediction %}
-          <div class="text-center">
-            <div class="text-xs text-gray-500">Your pick</div>
-            <div class="font-bold text-sm
-              {% if m.user_prediction.points_earned == 3 %}text-gold
-              {% elif m.user_prediction.points_earned == 1 %}text-primary
+          <div class="text-center px-3 py-1.5 rounded-lg" style="background:#0d1929;border:1px solid #1a3055;">
+            <div class="text-xs text-slate-500 mb-0.5">Your pick</div>
+            <div class="font-black text-sm
+              {% if m.user_prediction.points_earned == 3 %}text-yellow-400
+              {% elif m.user_prediction.points_earned == 1 %}text-green-400
               {% elif m.user_prediction.points_earned == 0 %}text-red-400
               {% else %}text-white{% endif %}">
               {{ m.user_prediction.home_score }} – {{ m.user_prediction.away_score }}
               {% if m.user_prediction.points_earned is not none %}
-                <span class="text-xs">(+{{ m.user_prediction.points_earned }})</span>
+                <span class="text-xs ml-1">(+{{ m.user_prediction.points_earned }})</span>
               {% endif %}
             </div>
           </div>
@@ -148,38 +142,28 @@ function scrollToStage(id) {
   if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-function formatCountdown(secondsLeft, isClose) {
-  if (secondsLeft <= 0) return isClose ? 'CLOSED' : 'KICKED OFF';
-  const d = Math.floor(secondsLeft / 86400);
-  const h = Math.floor((secondsLeft % 86400) / 3600);
-  const m = Math.floor((secondsLeft % 3600) / 60);
-  const s = secondsLeft % 60;
-  if (d > 0) return `${d}d ${String(h).padStart(2,'0')}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`;
-  if (h > 0) return `${String(h).padStart(2,'0')}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`;
-  return `${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`;
+function formatCountdown(s) {
+  if (s <= 0) return null;
+  const d = Math.floor(s/86400), h = Math.floor((s%86400)/3600),
+        m = Math.floor((s%3600)/60), sec = s%60;
+  if (d > 0) return `${d}d ${String(h).padStart(2,'0')}h ${String(m).padStart(2,'0')}m ${String(sec).padStart(2,'0')}s`;
+  if (h > 0) return `${String(h).padStart(2,'0')}h ${String(m).padStart(2,'0')}m ${String(sec).padStart(2,'0')}s`;
+  return `${String(m).padStart(2,'0')}m ${String(sec).padStart(2,'0')}s`;
 }
 
 function tickAll() {
-  const now = Math.floor(Date.now() / 1000);
+  const now = Math.floor(Date.now()/1000);
   document.querySelectorAll('.countdown').forEach(el => {
-    const target = parseInt(el.dataset.target, 10);
-    const left = target - now;
-    const isClose = el.closest('.countdown-wrap')
-                      ?.querySelector('.text-primary') !== null;
-    el.textContent = formatCountdown(Math.max(0, left), isClose);
-
-    // Flash green pulse when under 1 hour
-    if (left > 0 && left < 3600) {
-      el.classList.add('animate-pulse');
+    const left = parseInt(el.dataset.target,10) - now;
+    if (left <= 0) {
+      el.textContent = el.dataset.type === 'close' ? 'CLOSED' : 'KICKED OFF';
+      if (left > -5) setTimeout(() => location.reload(), 1500);
+      return;
     }
-    // Auto-reload page when a countdown expires so status badges update
-    if (left <= 0 && left > -5) {
-      setTimeout(() => location.reload(), 1500);
-    }
+    el.textContent = formatCountdown(left);
+    if (left < 3600) el.classList.add('countdown-urgent');
   });
 }
-
-tickAll();
-setInterval(tickAll, 1000);
+tickAll(); setInterval(tickAll, 1000);
 </script>
 {% endblock %}

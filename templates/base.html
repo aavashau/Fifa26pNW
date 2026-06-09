@@ -3,75 +3,249 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>{% block title %}FWC 2026 Predictor{% endblock %}</title>
+  <title>{% block title %}FIFA WC 2026 Predictor{% endblock %}</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
       theme: {
         extend: {
           colors: {
-            primary:  '#00c853',
-            gold:     '#FFD700',
-            dark:     '#0f1117',
-            card:     '#1a1f2e',
-            border:   '#2d3748',
+            primary:  '#00e676',
+            gold:     '#fbbf24',
+            dark:     '#070d1a',
+            navy:     '#0d1929',
+            navy2:    '#111f35',
+            border:   '#1a3055',
           }
         }
       }
     }
   </script>
   <style>
-    body { background: #0f1117; }
-    .nav-link { transition: color .15s; }
-    .nav-link:hover { color: #00c853; }
-    .card { background: #1a1f2e; border: 1px solid #2d3748; border-radius: .75rem; }
-    .btn-primary { background: #00c853; color: #000; font-weight: 700; border-radius: .5rem;
-                   padding: .5rem 1.25rem; transition: opacity .15s; display: inline-block; }
-    .btn-primary:hover { opacity: .85; }
-    .btn-gold { background: #FFD700; color: #000; font-weight: 700; border-radius: .5rem;
-                padding: .5rem 1.25rem; transition: opacity .15s; display: inline-block; }
-    .btn-gold:hover { opacity: .85; }
-    .badge-open     { background:#00c853; color:#000; }
-    .badge-closed   { background:#ef4444; color:#fff; }
-    .badge-upcoming { background:#3b82f6; color:#fff; }
-    .badge-completed{ background:#6b7280; color:#fff; }
-    .badge { font-size:.7rem; font-weight:700; padding:.15rem .5rem;
-             border-radius:9999px; text-transform:uppercase; letter-spacing:.04em; }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+    * { box-sizing: border-box; }
+    body {
+      background: #070d1a;
+      font-family: 'Inter', system-ui, sans-serif;
+      color: #e2e8f0;
+      min-height: 100vh;
+    }
+
+    /* Subtle stadium atmosphere — diagonal lines */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        repeating-linear-gradient(
+          -45deg,
+          transparent,
+          transparent 60px,
+          rgba(0,230,118,0.012) 60px,
+          rgba(0,230,118,0.012) 61px
+        );
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    main { position: relative; z-index: 1; }
+
+    /* ── Navbar ── */
+    .navbar {
+      background: linear-gradient(135deg, #060c18 0%, #0a1525 100%);
+      border-bottom: 1px solid #1a3055;
+      backdrop-filter: blur(12px);
+      position: sticky; top: 0; z-index: 50;
+    }
+
+    /* ── Cards ── */
+    .card {
+      background: linear-gradient(135deg, #0d1929 0%, #101e30 100%);
+      border: 1px solid #1a3055;
+      border-radius: 12px;
+      position: relative;
+      overflow: hidden;
+    }
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #1a3055, transparent);
+    }
+    .card-accent::before {
+      background: linear-gradient(90deg, transparent, #00e676, transparent);
+    }
+    .card-gold::before {
+      background: linear-gradient(90deg, transparent, #fbbf24, transparent);
+    }
+
+    /* ── Badges ── */
+    .badge {
+      font-size: .65rem; font-weight: 800;
+      padding: .2rem .6rem;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      display: inline-flex; align-items: center; gap: .3rem;
+    }
+    .badge-open {
+      background: rgba(0,230,118,.15);
+      color: #00e676;
+      border: 1px solid rgba(0,230,118,.3);
+    }
+    .badge-open::before { content: '●'; font-size: .5rem; animation: pulse-dot 1.5s infinite; }
+    .badge-closed {
+      background: rgba(248,113,113,.12);
+      color: #f87171;
+      border: 1px solid rgba(248,113,113,.25);
+    }
+    .badge-upcoming {
+      background: rgba(96,165,250,.12);
+      color: #60a5fa;
+      border: 1px solid rgba(96,165,250,.25);
+    }
+    .badge-completed {
+      background: rgba(100,116,139,.12);
+      color: #94a3b8;
+      border: 1px solid rgba(100,116,139,.2);
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: .3; }
+    }
+
+    /* ── Buttons ── */
+    .btn-primary {
+      background: linear-gradient(135deg, #00e676, #00c853);
+      color: #000;
+      font-weight: 800;
+      border-radius: 8px;
+      padding: .5rem 1.25rem;
+      transition: all .2s;
+      display: inline-block;
+      letter-spacing: .02em;
+    }
+    .btn-primary:hover { opacity: .88; transform: translateY(-1px); box-shadow: 0 4px 15px rgba(0,230,118,.25); }
+
+    .btn-gold {
+      background: linear-gradient(135deg, #fbbf24, #f59e0b);
+      color: #000;
+      font-weight: 800;
+      border-radius: 8px;
+      padding: .5rem 1.25rem;
+      transition: all .2s;
+      display: inline-block;
+    }
+    .btn-gold:hover { opacity: .88; transform: translateY(-1px); box-shadow: 0 4px 15px rgba(251,191,36,.25); }
+
+    /* ── Score inputs ── */
+    .score-input {
+      width: 3.5rem; text-align: center;
+      background: #060c18;
+      border: 2px solid #1a3055;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 1.5rem; font-weight: 900;
+      padding: .5rem;
+      transition: border-color .2s;
+    }
+    .score-input:focus { outline: none; border-color: #00e676; box-shadow: 0 0 0 3px rgba(0,230,118,.1); }
     input[type=number]::-webkit-outer-spin-button,
     input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
     input[type=number] { -moz-appearance: textfield; }
-    .score-input { width:3.5rem; text-align:center; background:#0f1117; border:1px solid #2d3748;
-                   border-radius:.375rem; color:#fff; font-size:1.25rem; font-weight:700; padding:.375rem; }
-    .score-input:focus { outline:none; border-color:#00c853; }
-    ::-webkit-scrollbar { width:6px; height:6px; }
-    ::-webkit-scrollbar-track { background:#1a1f2e; }
-    ::-webkit-scrollbar-thumb { background:#2d3748; border-radius:3px; }
+
+    /* ── Nav links ── */
+    .nav-link {
+      transition: color .15s;
+      position: relative;
+      padding-bottom: 2px;
+      font-weight: 500;
+    }
+    .nav-link.active::after, .nav-link:hover::after {
+      content: '';
+      position: absolute;
+      bottom: -2px; left: 0; right: 0;
+      height: 2px;
+      background: #00e676;
+      border-radius: 1px;
+    }
+    .nav-link.active { color: #00e676; }
+    .nav-link:hover { color: #00e676; }
+
+    /* ── Stat cards ── */
+    .stat-card {
+      background: linear-gradient(135deg, #0d1929, #101e30);
+      border: 1px solid #1a3055;
+      border-radius: 12px;
+      padding: 1.25rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .stat-card::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 3px;
+    }
+    .stat-card-green::after  { background: linear-gradient(90deg, transparent, #00e676, transparent); }
+    .stat-card-gold::after   { background: linear-gradient(90deg, transparent, #fbbf24, transparent); }
+    .stat-card-blue::after   { background: linear-gradient(90deg, transparent, #60a5fa, transparent); }
+    .stat-card-white::after  { background: linear-gradient(90deg, transparent, #94a3b8, transparent); }
+
+    /* ── Match card status bar ── */
+    .match-open   { border-left: 3px solid #00e676; }
+    .match-closed { border-left: 3px solid #f87171; }
+    .match-upcoming { border-left: 3px solid #60a5fa; }
+    .match-completed { border-left: 3px solid #334155; }
+
+    /* ── Leaderboard ── */
+    .rank-gold   { background: linear-gradient(90deg, rgba(251,191,36,.08), transparent); }
+    .rank-silver { background: linear-gradient(90deg, rgba(148,163,184,.06), transparent); }
+    .rank-bronze { background: linear-gradient(90deg, rgba(180,120,80,.06), transparent); }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: #070d1a; }
+    ::-webkit-scrollbar-thumb { background: #1a3055; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #00e676; }
+
+    /* ── Countdown pulse ── */
+    @keyframes glow-pulse {
+      0%, 100% { text-shadow: 0 0 4px currentColor; }
+      50% { text-shadow: 0 0 12px currentColor; }
+    }
+    .countdown-urgent { animation: glow-pulse 1s infinite; }
   </style>
 </head>
-<body class="text-white min-h-screen">
+<body>
 
 {% if user is defined and user %}
 <!-- Navbar -->
-<nav class="border-b border-border sticky top-0 z-50" style="background:#0f1117cc;backdrop-filter:blur(8px);">
+<nav class="navbar">
   <div class="max-w-6xl mx-auto px-4 flex items-center justify-between h-14">
-    <a href="/dashboard" class="flex items-center gap-2 font-bold">
+    <a href="/dashboard" class="flex items-center gap-2.5">
       <img src="https://m.media-amazon.com/images/M/MV5BNzk0NGIyMTctNmRkZi00ODQ0LWFhYjMtZDlmOTI3Y2JjMTRhXkEyXkFqcGc@.jpg"
-           alt="FIFA World Cup 2026" class="w-8 h-8 object-contain rounded-md"/>
-      <span class="text-sm sm:text-base leading-tight">
-        <span class="text-gold">FIFA World Cup</span><br class="hidden sm:block"/>
-        <span class="text-primary"> 2026</span>
-      </span>
+           alt="FIFA World Cup 2026" class="w-8 h-8 object-contain rounded-lg"/>
+      <div class="leading-tight">
+        <div class="text-xs font-800 text-gold tracking-wide" style="font-weight:800;color:#fbbf24;">FIFA World Cup</div>
+        <div class="text-xs font-700" style="color:#00e676;font-weight:700;margin-top:-1px;">2026 Predictor</div>
+      </div>
     </a>
-    <div class="flex items-center gap-6 text-sm text-gray-400">
-      <a href="/dashboard"  class="nav-link {% if active=='dashboard'  %}text-primary{% endif %}">Dashboard</a>
-      <a href="/fixtures"   class="nav-link {% if active=='fixtures'   %}text-primary{% endif %}">Fixtures</a>
-      <a href="/leaderboard"class="nav-link {% if active=='leaderboard'%}text-primary{% endif %}">Leaderboard</a>
+
+    <div class="flex items-center gap-5 text-sm text-slate-400">
+      <a href="/dashboard"   class="nav-link {% if active=='dashboard'  %}active{% endif %}">Dashboard</a>
+      <a href="/fixtures"    class="nav-link {% if active=='fixtures'   %}active{% endif %}">Fixtures</a>
+      <a href="/leaderboard" class="nav-link {% if active=='leaderboard'%}active{% endif %}">Leaderboard</a>
       {% if user.is_admin %}
-      <a href="/admin" class="nav-link {% if active=='admin' %}text-gold{% endif %} text-gold">Admin</a>
+      <a href="/admin" class="nav-link {% if active=='admin' %}active{% endif %}" style="color:#fbbf24;">Admin</a>
       {% endif %}
-      <span class="text-gray-600">|</span>
-      <span class="text-white font-medium">{{ user.username }}</span>
-      <a href="/logout" class="nav-link text-red-400">Logout</a>
+      <div class="h-4 w-px bg-slate-700"></div>
+      <span class="text-white font-semibold text-xs">{{ user.username }}</span>
+      <a href="/logout" class="text-xs text-slate-500 hover:text-red-400 transition-colors">Logout</a>
     </div>
   </div>
 </nav>
@@ -81,8 +255,9 @@
   {% block content %}{% endblock %}
 </main>
 
-<footer class="text-center text-gray-600 text-xs py-6 border-t border-border mt-12">
-  FWC 2026 Score Predictor · Private Game · All times in Nepal Standard Time (NPT)
+<footer class="relative z-10 text-center text-slate-600 text-xs py-6 mt-12"
+        style="border-top:1px solid #1a3055;">
+  FIFA World Cup 2026 · Score Predictor · Private Game · All times in NPT (UTC+5:45)
 </footer>
 
 </body>
