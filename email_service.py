@@ -46,11 +46,14 @@ async def send_invite_email(to_email: str, invite_link: str, inviter_name: str =
 """
     msg.attach(MIMEText(html, "html"))
 
+    port = SMTP_PORT
+    use_tls = port == 465
     await aiosmtplib.send(
         msg,
         hostname=SMTP_HOST,
-        port=SMTP_PORT,
+        port=port,
         username=SMTP_USER,
         password=SMTP_PASS,
-        start_tls=True,
+        use_tls=use_tls,
+        start_tls=not use_tls,
     )
