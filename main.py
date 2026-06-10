@@ -18,7 +18,7 @@ app = FastAPI(title="FWC 2026 Predictor")
 templates = Jinja2Templates(directory="templates")
 
 NPT = timezone(timedelta(hours=5, minutes=45))
-BASE_URL          = os.getenv("BASE_URL", "http://localhost:8000")
+BASE_URL          = os.getenv("BASE_URL", "http://localhost:8000").rstrip("/")
 GOOGLE_CLIENT_ID  = os.getenv("GOOGLE_CLIENT_ID", "")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
 _SECRET           = os.getenv("SECRET_KEY", "changeme")
