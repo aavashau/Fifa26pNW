@@ -31,7 +31,7 @@ async def send_invite_email(to_email: str, invite_link: str, inviter_name: str =
     </div>
     <p style="color:#718096;font-size:13px;">This link expires in 48 hours. If you didn't request this, ignore this email.</p>
     <p style="color:#718096;font-size:12px;border-top:1px solid #2d3748;padding-top:16px;margin-top:24px;">
-      FWC 2026 Score Predictor &middot; Private Game
+      FWC 2026 Score Predictor
     </p>
   </div>
 </body>
