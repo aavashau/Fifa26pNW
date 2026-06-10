@@ -168,6 +168,142 @@
 </div>
 {% endif %}
 
+<!-- World Cup History -->
+<div class="flex items-center gap-3 mb-4 mt-12">
+  <h2 class="text-base font-black uppercase tracking-widest text-slate-300">World Cup History</h2>
+  <div class="flex-1 h-px" style="background:linear-gradient(90deg,#1a3055,transparent)"></div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-10">
+
+  <!-- ── Left: Champions ── -->
+  <div class="card card-gold" style="overflow:hidden;">
+    <div style="padding:.75rem 1rem;background:linear-gradient(135deg,#111f35,#0d1929);border-bottom:1px solid #1a3055;display:flex;align-items:center;gap:.5rem;">
+      <span style="font-size:.9rem;">🏆</span>
+      <span style="font-size:.7rem;font-weight:900;text-transform:uppercase;letter-spacing:.08em;color:#fbbf24;">World Cup Champions</span>
+    </div>
+    <div style="overflow-y:auto;max-height:28rem;">
+      <table style="width:100%;border-collapse:collapse;font-size:.75rem;">
+        <thead>
+          <tr style="background:#0d1929;position:sticky;top:0;z-index:1;">
+            <th style="padding:.4rem .75rem;text-align:left;color:#475569;font-weight:700;font-size:.65rem;text-transform:uppercase;letter-spacing:.05em;">Year</th>
+            <th style="padding:.4rem .5rem;text-align:left;color:#475569;font-weight:700;font-size:.65rem;text-transform:uppercase;letter-spacing:.05em;">Champion</th>
+            <th style="padding:.4rem .5rem;text-align:center;color:#475569;font-weight:700;font-size:.65rem;text-transform:uppercase;letter-spacing:.05em;">Final</th>
+            <th style="padding:.4rem .75rem;text-align:left;color:#475569;font-weight:700;font-size:.65rem;text-transform:uppercase;letter-spacing:.05em;">Runner-up</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% set champions = [
+            (2022,"Argentina","ar","3–3 (4–2p)","France","fr"),
+            (2018,"France","fr","4–2","Croatia","hr"),
+            (2014,"Germany","de","1–0","Argentina","ar"),
+            (2010,"Spain","es","1–0","Netherlands","nl"),
+            (2006,"Italy","it","1–1 (5–3p)","France","fr"),
+            (2002,"Brazil","br","2–0","Germany","de"),
+            (1998,"France","fr","3–0","Brazil","br"),
+            (1994,"Brazil","br","0–0 (3–2p)","Italy","it"),
+            (1990,"West Germany","de","1–0","Argentina","ar"),
+            (1986,"Argentina","ar","3–2","West Germany","de"),
+            (1982,"Italy","it","3–1","West Germany","de"),
+            (1978,"Argentina","ar","3–1","Netherlands","nl"),
+            (1974,"West Germany","de","2–1","Netherlands","nl"),
+            (1970,"Brazil","br","4–1","Italy","it"),
+            (1966,"England","gb-eng","4–2","West Germany","de"),
+            (1962,"Brazil","br","3–1","Czechoslovakia","cz"),
+            (1958,"Brazil","br","5–2","Sweden","se"),
+            (1954,"West Germany","de","3–2","Hungary","hu"),
+            (1950,"Uruguay","uy","2–1","Brazil","br"),
+            (1938,"Italy","it","4–2","Hungary","hu"),
+            (1934,"Italy","it","2–1","Czechoslovakia","cz"),
+            (1930,"Uruguay","uy","4–2","Argentina","ar"),
+          ] %}
+          {% for year, champ, champ_iso, score, runner, runner_iso in champions %}
+          <tr style="border-bottom:1px solid #0f1929;transition:background .15s;" onmouseover="this.style.background='rgba(251,191,36,.04)'" onmouseout="this.style.background=''">
+            <td style="padding:.45rem .75rem;font-weight:800;color:#fbbf24;">{{ year }}</td>
+            <td style="padding:.45rem .5rem;">
+              <div style="display:flex;align-items:center;gap:.4rem;">
+                <img src="https://flagcdn.com/w20/{{ champ_iso }}.png" alt="{{ champ }}"
+                     style="width:1.1rem;height:.8rem;object-fit:cover;border-radius:2px;" loading="lazy"/>
+                <span style="font-weight:800;color:#e2e8f0;">{{ champ }}</span>
+              </div>
+            </td>
+            <td style="padding:.45rem .5rem;text-align:center;font-weight:900;color:#fbbf24;font-size:.7rem;">{{ score }}</td>
+            <td style="padding:.45rem .75rem;">
+              <div style="display:flex;align-items:center;gap:.4rem;">
+                <img src="https://flagcdn.com/w20/{{ runner_iso }}.png" alt="{{ runner }}"
+                     style="width:1.1rem;height:.8rem;object-fit:cover;border-radius:2px;" loading="lazy"/>
+                <span style="color:#64748b;">{{ runner }}</span>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── Right: Golden Boot ── -->
+  <div class="card card-accent" style="overflow:hidden;">
+    <div style="padding:.75rem 1rem;background:linear-gradient(135deg,#111f35,#0d1929);border-bottom:1px solid #1a3055;display:flex;align-items:center;gap:.5rem;">
+      <span style="font-size:.9rem;">👟</span>
+      <span style="font-size:.7rem;font-weight:900;text-transform:uppercase;letter-spacing:.08em;color:#00e676;">Golden Boot Winners</span>
+    </div>
+    <div style="overflow-y:auto;max-height:28rem;">
+      <table style="width:100%;border-collapse:collapse;font-size:.75rem;">
+        <thead>
+          <tr style="background:#0d1929;position:sticky;top:0;z-index:1;">
+            <th style="padding:.4rem .75rem;text-align:left;color:#475569;font-weight:700;font-size:.65rem;text-transform:uppercase;letter-spacing:.05em;">Year</th>
+            <th style="padding:.4rem .5rem;text-align:left;color:#475569;font-weight:700;font-size:.65rem;text-transform:uppercase;letter-spacing:.05em;">Player</th>
+            <th style="padding:.4rem .5rem;text-align:left;color:#475569;font-weight:700;font-size:.65rem;text-transform:uppercase;letter-spacing:.05em;">Country</th>
+            <th style="padding:.4rem .75rem;text-align:center;color:#475569;font-weight:700;font-size:.65rem;text-transform:uppercase;letter-spacing:.05em;">Goals</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% set golden_boots = [
+            (2022,"Kylian Mbappé","France","fr",8),
+            (2018,"Harry Kane","England","gb-eng",6),
+            (2014,"James Rodríguez","Colombia","co",6),
+            (2010,"Thomas Müller","Germany","de",5),
+            (2006,"Miroslav Klose","Germany","de",5),
+            (2002,"Ronaldo","Brazil","br",8),
+            (1998,"Davor Šuker","Croatia","hr",6),
+            (1994,"Hristo Stoichkov","Bulgaria","bg",6),
+            (1990,"Salvatore Schillaci","Italy","it",6),
+            (1986,"Gary Lineker","England","gb-eng",6),
+            (1982,"Paolo Rossi","Italy","it",6),
+            (1978,"Mario Kempes","Argentina","ar",6),
+            (1974,"Grzegorz Lato","Poland","pl",7),
+            (1970,"Gerd Müller","West Germany","de",10),
+            (1966,"Eusébio","Portugal","pt",9),
+            (1962,"Garrincha & 5 others","Brazil","br",4),
+            (1958,"Just Fontaine","France","fr",13),
+            (1954,"Sándor Kocsis","Hungary","hu",11),
+            (1950,"Ademir","Brazil","br",9),
+            (1938,"Leônidas","Brazil","br",7),
+            (1934,"Oldřich Nejedlý","Czechoslovakia","cz",5),
+            (1930,"Guillermo Stábile","Argentina","ar",8),
+          ] %}
+          {% for year, player, country, iso, goals in golden_boots %}
+          <tr style="border-bottom:1px solid #0f1929;transition:background .15s;" onmouseover="this.style.background='rgba(0,230,118,.04)'" onmouseout="this.style.background=''">
+            <td style="padding:.45rem .75rem;font-weight:800;color:#fbbf24;">{{ year }}</td>
+            <td style="padding:.45rem .5rem;font-weight:700;color:#e2e8f0;">{{ player }}</td>
+            <td style="padding:.45rem .5rem;">
+              <div style="display:flex;align-items:center;gap:.4rem;">
+                <img src="https://flagcdn.com/w20/{{ iso }}.png" alt="{{ country }}"
+                     style="width:1.1rem;height:.8rem;object-fit:cover;border-radius:2px;" loading="lazy"/>
+                <span style="color:#64748b;">{{ country }}</span>
+              </div>
+            </td>
+            <td style="padding:.45rem .75rem;text-align:center;font-weight:900;color:#00e676;">{{ goals }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
 <script>
 function formatCountdown(s) {
   if (s <= 0) return null;
