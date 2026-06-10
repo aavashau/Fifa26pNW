@@ -95,7 +95,12 @@
       color: #00e676;
       border: 1px solid rgba(0,230,118,.3);
     }
-    .badge-open::before { content: '●'; font-size: .5rem; animation: pulse-dot 1.5s infinite; }
+    .badge-live {
+      background: rgba(239,68,68,.15);
+      color: #f87171;
+      border: 1px solid rgba(239,68,68,.35);
+    }
+    .badge-live::before { content: '●'; font-size: .5rem; animation: pulse-dot 1s infinite; }
     .badge-closed {
       background: rgba(248,113,113,.12);
       color: #f87171;
@@ -197,9 +202,10 @@
     .stat-card-white::after  { background: linear-gradient(90deg, transparent, #94a3b8, transparent); }
 
     /* ── Match card status bar ── */
-    .match-open   { border-left: 3px solid #00e676; }
-    .match-closed { border-left: 3px solid #f87171; }
-    .match-upcoming { border-left: 3px solid #60a5fa; }
+    .match-open      { border-left: 3px solid #00e676; }
+    .match-live      { border-left: 3px solid #f87171; }
+    .match-closed    { border-left: 3px solid #475569; }
+    .match-upcoming  { border-left: 3px solid #60a5fa; }
     .match-completed { border-left: 3px solid #334155; }
 
     /* ── Leaderboard ── */

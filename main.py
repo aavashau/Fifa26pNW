@@ -3,7 +3,8 @@ from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from datetime import datetime, timedelta, timezone
 from typing import Optional
-import os
+import os, hmac, hashlib, urllib.parse
+import httpx
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -17,6 +18,26 @@ app = FastAPI(title="FWC 2026 Predictor")
 templates = Jinja2Templates(directory="templates")
 
 NPT = timezone(timedelta(hours=5, minutes=45))
+BASE_URL          = os.getenv("BASE_URL", "http://localhost:8000")
+GOOGLE_CLIENT_ID  = os.getenv("GOOGLE_CLIENT_ID", "")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
+_SECRET           = os.getenv("SECRET_KEY", "changeme")
+
+_GOOGLE_AUTH_URL     = "https://accounts.google.com/o/oauth2/v2/auth"
+_GOOGLE_TOKEN_URL    = "https://oauth2.googleapis.com/token"
+_GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo"
+
+
+def _oauth_state(data: str) -> str:
+    sig = hmac.new(_SECRET.encode(), data.encode(), hashlib.sha256).hexdigest()[:16]
+    return f"{data}|{sig}"
+
+def _verify_oauth_state(state: str) -> Optional[str]:
+    if "|" not in state:
+        return None
+    data, sig = state.rsplit("|", 1)
+    expected = hmac.new(_SECRET.encode(), data.encode(), hashlib.sha256).hexdigest()[:16]
+    return data if hmac.compare_digest(sig, expected) else None
 
 
 # ── template helpers ──────────────────────────────────────────────────────────
@@ -31,13 +52,15 @@ def prediction_status(match_time_utc: datetime) -> str:
     now = datetime.now(timezone.utc)
     if match_time_utc.tzinfo is None:
         match_time_utc = match_time_utc.replace(tzinfo=timezone.utc)
-    opens = match_time_utc - timedelta(hours=24)
+    opens  = match_time_utc - timedelta(hours=24)
     closes = match_time_utc - timedelta(hours=1)
     if now < opens:
         return "upcoming"
     if opens <= now < closes:
         return "open"
-    return "closed"
+    if closes <= now < match_time_utc:
+        return "closed"
+    return "live"   # past kickoff, not yet marked complete by admin
 
 
 def enrich_matches(matches: list[dict], user_id: Optional[int] = None) -> list[dict]:
@@ -151,6 +174,100 @@ def logout():
     resp = RedirectResponse("/login", status_code=302)
     resp.delete_cookie("session")
     return resp
+
+
+# ── Google OAuth ──────────────────────────────────────────────────────────────
+
+@app.get("/auth/google")
+def google_login(intent: str = "login", token: str = ""):
+    if not GOOGLE_CLIENT_ID:
+        return RedirectResponse("/login?error=Google+login+not+configured", status_code=302)
+    state = _oauth_state(f"{intent}:{token}")
+    params = urllib.parse.urlencode({
+        "client_id":     GOOGLE_CLIENT_ID,
+        "redirect_uri":  f"{BASE_URL}/auth/google/callback",
+        "response_type": "code",
+        "scope":         "openid email profile",
+        "state":         state,
+        "prompt":        "select_account",
+    })
+    return RedirectResponse(f"{_GOOGLE_AUTH_URL}?{params}", status_code=302)
+
+
+@app.get("/auth/google/callback")
+async def google_callback(request: Request, code: str = "", state: str = "", error: str = ""):
+    if error or not code:
+        return RedirectResponse("/login?error=Google+sign-in+cancelled", status_code=302)
+
+    data = _verify_oauth_state(state)
+    if not data:
+        return RedirectResponse("/login?error=Invalid+state", status_code=302)
+
+    intent, _, inv_token = data.partition(":")
+
+    # Exchange code → tokens
+    async with httpx.AsyncClient() as client:
+        token_resp = await client.post(_GOOGLE_TOKEN_URL, data={
+            "code":          code,
+            "client_id":     GOOGLE_CLIENT_ID,
+            "client_secret": GOOGLE_CLIENT_SECRET,
+            "redirect_uri":  f"{BASE_URL}/auth/google/callback",
+            "grant_type":    "authorization_code",
+        })
+        if token_resp.status_code != 200:
+            return RedirectResponse("/login?error=Google+token+exchange+failed", status_code=302)
+        access_token = token_resp.json().get("access_token")
+
+        # Get user info
+        info_resp = await client.get(_GOOGLE_USERINFO_URL,
+                                     headers={"Authorization": f"Bearer {access_token}"})
+        if info_resp.status_code != 200:
+            return RedirectResponse("/login?error=Could+not+fetch+Google+profile", status_code=302)
+        info = info_resp.json()
+
+    g_email = info.get("email", "").lower().strip()
+    g_name  = info.get("name", "") or info.get("given_name", "")
+
+    if intent == "login":
+        user = sheets.get_user_by_email(g_email)
+        if not user:
+            return RedirectResponse("/login?error=No+account+for+this+Google+email.+Ask+admin+for+an+invite.", status_code=302)
+        if not user["is_active"]:
+            return RedirectResponse("/login?error=Account+disabled", status_code=302)
+        jwt = authlib.create_token(user["id"], user["is_admin"])
+        resp = RedirectResponse("/dashboard", status_code=302)
+        resp.set_cookie("session", jwt, httponly=True, max_age=60*60*24*14, samesite="lax")
+        return resp
+
+    if intent == "register" and inv_token:
+        inv = sheets.get_invite_token(inv_token)
+        if not inv or inv["used"]:
+            return RedirectResponse("/login?error=Invalid+or+used+invite+link", status_code=302)
+        exp = datetime.fromisoformat(inv["expires_at"])
+        if exp.tzinfo is None:
+            exp = exp.replace(tzinfo=timezone.utc)
+        if datetime.now(timezone.utc) > exp:
+            return RedirectResponse("/login?error=Invite+link+expired", status_code=302)
+        if inv["email"].lower() != g_email:
+            err = urllib.parse.quote(f"This invite was sent to {inv['email']}, but you signed in as {g_email}.")
+            return RedirectResponse(f"/register/{inv_token}?error={err}", status_code=302)
+        if sheets.get_user_by_email(g_email):
+            return RedirectResponse("/login?error=Account+already+exists.+Please+sign+in.", status_code=302)
+
+        is_first = sheets.user_count() == 0
+        username  = g_name.replace(" ", "").lower()[:20] or g_email.split("@")[0]
+        # ensure unique username
+        base, i = username, 1
+        while sheets.get_user_by_username(username):
+            username = f"{base}{i}"; i += 1
+        user = sheets.create_user(username, g_email, "", is_admin=is_first)
+        sheets.mark_token_used(inv_token)
+        jwt = authlib.create_token(user["id"], user["is_admin"])
+        resp = RedirectResponse("/dashboard", status_code=302)
+        resp.set_cookie("session", jwt, httponly=True, max_age=60*60*24*14, samesite="lax")
+        return resp
+
+    return RedirectResponse("/login", status_code=302)
 
 
 @app.get("/register/{token}", response_class=HTMLResponse)

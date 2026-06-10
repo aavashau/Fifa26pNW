@@ -151,7 +151,7 @@ def get_user_by_username(username: str) -> Optional[dict]:
     return next((u for u in get_all_users() if u["username"].lower() == username.lower()), None)
 
 
-def create_user(username: str, email: str, password_hash: str, is_admin: bool = False) -> dict:
+def create_user(username: str, email: str, password_hash: str = "", is_admin: bool = False) -> dict:
     users = get_all_users()
     new_id = max((u["id"] for u in users), default=0) + 1
     row = [new_id, username, email, password_hash, str(is_admin), "True",
