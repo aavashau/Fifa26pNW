@@ -1,20 +1,13 @@
-import aiosmtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
+import httpx
 import os
 
-SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
-SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
-SMTP_USER = os.getenv("SMTP_USER", "").strip()
-SMTP_PASS = os.getenv("SMTP_PASSWORD", "").replace(" ", "").strip()
+BREVO_API_KEY = os.getenv("BREVO_API_KEY", "")
+SENDER_EMAIL  = os.getenv("SMTP_USER", "fifaworldcuppredictor@gmail.com").strip()
+
+_BREVO_URL = "https://api.brevo.com/v3/smtp/email"
 
 
 async def send_invite_email(to_email: str, invite_link: str, inviter_name: str = "The Admin"):
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = "You're invited to FWC 2026 Score Predictor!"
-    msg["From"] = SMTP_USER
-    msg["To"] = to_email
-
     html = f"""
 <!DOCTYPE html>
 <html>
@@ -44,13 +37,18 @@ async def send_invite_email(to_email: str, invite_link: str, inviter_name: str =
 </body>
 </html>
 """
-    msg.attach(MIMEText(html, "html"))
 
-    await aiosmtplib.send(
-        msg,
-        hostname=SMTP_HOST,
-        port=SMTP_PORT,
-        username=SMTP_USER,
-        password=SMTP_PASS,
-        start_tls=True,
-    )
+    async with httpx.AsyncClient(timeout=15) as client:
+        resp = await client.post(
+            _BREVO_URL,
+            headers={"api-key": BREVO_API_KEY, "Content-Type": "application/json"},
+            json={
+                "sender": {"name": "FIFA WC 2026 Predictor", "email": SENDER_EMAIL},
+                "to":     [{"email": to_email}],
+                "subject": "You're invited to FWC 2026 Score Predictor!",
+                "htmlContent": html,
+            },
+        )
+
+    if resp.status_code not in (200, 201):
+        raise Exception(f"Brevo error {resp.status_code}: {resp.text[:200]}")
