@@ -147,7 +147,12 @@ def login_page(request: Request, error: str = ""):
     user = current_user(request)
     if user:
         return RedirectResponse("/dashboard", status_code=302)
-    return templates.TemplateResponse("login.html", {"request": request, "error": error})
+    return templates.TemplateResponse("login.html", {
+        "request": request,
+        "error": error,
+        "google_enabled": bool(GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET),
+        "show_setup": sheets.user_count() == 0,
+    })
 
 
 @app.post("/login")
