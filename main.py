@@ -19,6 +19,66 @@ templates = Jinja2Templates(directory="templates")
 NPT = timezone(timedelta(hours=5, minutes=45))
 BASE_URL = os.getenv("BASE_URL", "http://localhost:8000").rstrip("/")
 
+_FIFA_BASE   = "https://api.fifa.com/api/v3"
+_FIFA_PARAMS = "idCompetition=17&idSeason=285023&language=en"
+_GROUP_ORDER_ALPHA = [f"Group {c}" for c in "ABCDEFGHIJKL"]
+
+
+def _str(val) -> str:
+    """FIFA API returns either plain strings or [{Locale, Description}] arrays."""
+    if isinstance(val, str):
+        return val
+    if isinstance(val, list) and val:
+        d = val[0]
+        return d.get("Description", "") if isinstance(d, dict) else str(d)
+    return ""
+
+
+def _compute_standings_from_matches(matches: list) -> list:
+    groups: dict = {}
+    for m in matches:
+        gname = _str(m.get("GroupName", ""))
+        if not gname or "Group" not in gname:
+            continue
+        home_obj = m.get("Home", {})
+        away_obj = m.get("Away", {})
+        ht = _str(home_obj.get("TeamName", ""))
+        at = _str(away_obj.get("TeamName", ""))
+        if not ht or not at:
+            continue
+        if gname not in groups:
+            groups[gname] = {}
+        for team in (ht, at):
+            if team not in groups[gname]:
+                groups[gname][team] = {"team": team, "P": 0, "W": 0, "D": 0, "L": 0,
+                                       "GF": 0, "GA": 0, "GD": 0, "Pts": 0}
+        # Score is in Home.Score or top-level HomeTeamScore
+        hs = home_obj.get("Score") if home_obj.get("Score") is not None else m.get("HomeTeamScore")
+        as_ = away_obj.get("Score") if away_obj.get("Score") is not None else m.get("AwayTeamScore")
+        if hs is None or as_ is None:
+            continue
+        hs, as_ = int(hs), int(as_)
+        for team, gf, ga in ((ht, hs, as_), (at, as_, hs)):
+            groups[gname][team]["P"]  += 1
+            groups[gname][team]["GF"] += gf
+            groups[gname][team]["GA"] += ga
+            groups[gname][team]["GD"]  = groups[gname][team]["GF"] - groups[gname][team]["GA"]
+        if hs > as_:
+            groups[gname][ht]["W"] += 1; groups[gname][ht]["Pts"] += 3; groups[gname][at]["L"] += 1
+        elif hs < as_:
+            groups[gname][at]["W"] += 1; groups[gname][at]["Pts"] += 3; groups[gname][ht]["L"] += 1
+        else:
+            groups[gname][ht]["D"] += 1; groups[gname][ht]["Pts"] += 1
+            groups[gname][at]["D"] += 1; groups[gname][at]["Pts"] += 1
+
+    result = []
+    for g in _GROUP_ORDER_ALPHA:
+        if g in groups:
+            teams = sorted(groups[g].values(),
+                           key=lambda x: (-x["Pts"], -x["GD"], -x["GF"], x["team"]))
+            result.append({"name": g, "teams": teams})
+    return result
+
 
 # ── template helpers ──────────────────────────────────────────────────────────
 
@@ -110,6 +170,81 @@ def startup():
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+# ── FIFA official standings proxy ─────────────────────────────────────────────
+
+@app.get("/api/fifa-standings")
+async def fifa_standings_api():
+    import httpx as _httpx
+    payload: dict = {"live": [], "groups": [], "source": ""}
+
+    async with _httpx.AsyncClient(timeout=10) as client:
+        # Live matches
+        try:
+            r = await client.get(f"{_FIFA_BASE}/live/football?{_FIFA_PARAMS}")
+            if r.status_code == 200:
+                live_raw = r.json().get("Results", [])
+                payload["live"] = [
+                    {
+                        "home": _str(m.get("Home", {}).get("TeamName", "")),
+                        "away": _str(m.get("Away", {}).get("TeamName", "")),
+                        "home_score": m.get("Home", {}).get("Score"),
+                        "away_score": m.get("Away", {}).get("Score"),
+                        "minute": m.get("MatchTime", ""),
+                        "group": _str(m.get("GroupName", "")),
+                        "venue": _str((m.get("Stadium") or {}).get("Name", "")),
+                    }
+                    for m in live_raw
+                ]
+        except Exception:
+            pass
+
+        # Official standings endpoint (activates once matches start)
+        try:
+            r = await client.get(f"{_FIFA_BASE}/standings?{_FIFA_PARAMS}")
+            if r.status_code == 200:
+                data = r.json().get("Results", [])
+                groups = []
+                for grp in data:
+                    gname = _str(grp.get("Name") or grp.get("GroupName", ""))
+                    if not gname or "Group" not in gname:
+                        continue
+                    teams = []
+                    for entry in grp.get("Teams", []):
+                        t = entry.get("Team", {})
+                        teams.append({
+                            "team": _str(t.get("Name", "")),
+                            "P":    entry.get("Played", 0),
+                            "W":    entry.get("Won", 0),
+                            "D":    entry.get("Drawn", 0),
+                            "L":    entry.get("Lost", 0),
+                            "GF":   entry.get("GoalsFor", 0),
+                            "GA":   entry.get("GoalsAgainst", 0),
+                            "GD":   entry.get("GoalDifference", 0),
+                            "Pts":  entry.get("Points", 0),
+                        })
+                    if teams:
+                        groups.append({"name": gname, "teams": teams})
+                if groups:
+                    payload["source"] = "standings"
+                    payload["groups"] = groups
+                    return JSONResponse(payload)
+        except Exception:
+            pass
+
+        # Fallback: compute from match results
+        try:
+            r = await client.get(f"{_FIFA_BASE}/calendar/matches?{_FIFA_PARAMS}&count=500")
+            if r.status_code == 200:
+                payload["source"] = "matches"
+                payload["groups"] = _compute_standings_from_matches(r.json().get("Results", []))
+                return JSONResponse(payload)
+        except Exception:
+            pass
+
+    payload["source"] = "error"
+    return JSONResponse(payload, status_code=503)
 
 
 # ── public routes ─────────────────────────────────────────────────────────────
