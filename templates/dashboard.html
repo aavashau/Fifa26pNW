@@ -80,7 +80,7 @@
       {% if m.status == 'open' %}
       <div class="flex items-center gap-1.5 mt-1.5">
         <span class="text-xs font-700" style="color:#00e676;">⏳ Closes in</span>
-        <span class="countdown font-mono text-xs font-black {% if m.match_time_utc.timestamp() - 3600 - now_ts < 3600 %}countdown-urgent{% endif %}"
+        <span class="countdown font-mono text-xs font-black"
               style="color:#00e676;"
               data-target="{{ (m.match_time_utc.timestamp() - 3600)|int }}"
               data-type="close">--:--:--</span>
