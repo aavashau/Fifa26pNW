@@ -535,8 +535,7 @@ async def admin_invite(request: Request,
 
     expires = datetime.now(timezone.utc) + timedelta(hours=48)
     token = sheets.create_invite_token(email.strip().lower(), expires)
-    base_url = os.getenv("BASE_URL", "http://localhost:8000")
-    invite_link = f"{base_url}/register/{token}"
+    invite_link = f"{BASE_URL}/register/{token}"
 
     try:
         await email_service.send_invite_email(email.strip(), invite_link)
