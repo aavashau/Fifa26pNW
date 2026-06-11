@@ -158,6 +158,7 @@ templates.env.globals["flag_url"] = _flag_url
 
 @app.on_event("startup")
 def startup():
+    print(f"[startup] BASE_URL = {BASE_URL}")
     try:
         sheets.init_sheets()
     except Exception as e:
