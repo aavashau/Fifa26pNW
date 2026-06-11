@@ -96,7 +96,7 @@ SHEET_HEADERS = {
     "matches":       ["match_code", "stage", "home_team", "away_team", "venue",
                       "match_time_utc", "home_score", "away_score", "is_completed", "notes"],
     "predictions":   ["key", "user_id", "match_code", "home_score", "away_score",
-                      "points_earned", "created_at", "updated_at"],
+                      "points_earned", "created_at", "updated_at", "username"],
 }
 
 
@@ -107,6 +107,13 @@ def init_sheets():
         if name not in existing:
             sheet = ss.add_worksheet(title=name, rows=2000, cols=len(headers))
             sheet.append_row(headers, value_input_option="RAW")
+        else:
+            # Add any missing header columns to existing sheets
+            sheet = ss.worksheet(name)
+            existing_headers = sheet.row_values(1)
+            for col_idx, h in enumerate(headers, start=1):
+                if h not in existing_headers:
+                    sheet.update_cell(1, col_idx, h)
     # remove default blank sheet if present alongside real sheets
     if "Sheet1" in existing and len(existing) >= len(SHEET_HEADERS):
         try:
@@ -291,6 +298,7 @@ def _parse_prediction(row: dict) -> dict:
         "points_earned": int(row["points_earned"]) if str(row.get("points_earned", "")).strip() != "" else None,
         "created_at":   row["created_at"],
         "updated_at":   row["updated_at"],
+        "username":     row.get("username", ""),
     }
 
 
@@ -312,15 +320,17 @@ def get_prediction(user_id: int, match_code: str) -> Optional[dict]:
 def upsert_prediction(user_id: int, match_code: str, home_score: int, away_score: int):
     key = f"{user_id}|{match_code}"
     now = datetime.now(timezone.utc).isoformat()
+    user = get_user_by_id(user_id)
+    username = user["username"] if user else ""
     sheet = ws("predictions")
     rows = sheet.get_all_records()
     for i, row in enumerate(rows, start=2):
         if row.get("key") == key:
-            sheet.update(f"D{i}:H{i}", [[home_score, away_score, "", now, now]])
+            sheet.update(f"D{i}:I{i}", [[home_score, away_score, "", now, now, username]])
             _bust("predictions")
             return
     # not found → insert
-    sheet.append_row([key, user_id, match_code, home_score, away_score, "", now, now],
+    sheet.append_row([key, user_id, match_code, home_score, away_score, "", now, now, username],
                      value_input_option="RAW")
     _bust("predictions")
 
