@@ -445,8 +445,15 @@ def fixtures_page(request: Request):
     stages = [(s, grouped[s]) for s in stage_order if s in grouped]
     live_now = [m for m in enriched if not m["is_completed"] and m["status"] == "live"]
 
+    # All predictions grouped by match_code (shown after prediction closes)
+    all_preds = sheets.get_all_predictions()
+    preds_by_match: dict[str, list] = {}
+    for p in all_preds:
+        preds_by_match.setdefault(p["match_code"], []).append(p)
+
     return templates.TemplateResponse("fixtures.html", {
         "request": request, "user": user, "stages": stages, "live_now": live_now,
+        "preds_by_match": preds_by_match,
     })
 
 
