@@ -191,9 +191,6 @@
       </span>
     </div>
 
-    <!-- Live matches strip -->
-    <div id="fifa-live" class="mb-3"></div>
-
     <div id="fifa-standings">
       <!-- Skeleton while loading -->
       {% for _ in range(4) %}
@@ -326,10 +323,6 @@ async function fetchFifaStandings() {
     const r = await fetch('/api/fifa-standings', { signal: AbortSignal.timeout(12000) });
     if (!r.ok) throw new Error('API error');
     const data = await r.json();
-
-    // Live matches
-    const liveEl = document.getElementById('fifa-live');
-    if (liveEl) liveEl.innerHTML = buildLiveHTML(data.live || []);
 
     // Group tables
     if (data.groups && data.groups.length) {
