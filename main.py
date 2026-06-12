@@ -443,9 +443,10 @@ def fixtures_page(request: Request):
         grouped.setdefault(m["stage"], []).append(m)
 
     stages = [(s, grouped[s]) for s in stage_order if s in grouped]
+    live_now = [m for m in enriched if not m["is_completed"] and m["status"] == "live"]
 
     return templates.TemplateResponse("fixtures.html", {
-        "request": request, "user": user, "stages": stages,
+        "request": request, "user": user, "stages": stages, "live_now": live_now,
     })
 
 

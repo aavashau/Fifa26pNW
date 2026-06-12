@@ -13,6 +13,50 @@
   </div>
 </div>
 
+<!-- ── Live Match Banner ── -->
+{% if live_now %}
+<div style="background:linear-gradient(135deg,#1a0a0a,#1f0d0d);border:1px solid rgba(239,68,68,.35);border-radius:14px;padding:1rem 1.25rem;margin-bottom:1.25rem;position:relative;overflow:hidden;">
+  <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#f87171,transparent);"></div>
+  <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.75rem;">
+    <span style="width:.55rem;height:.55rem;border-radius:50%;background:#f87171;display:inline-block;animation:pulse-dot 1s infinite;flex-shrink:0;"></span>
+    <span style="font-size:.65rem;font-weight:900;text-transform:uppercase;letter-spacing:.1em;color:#f87171;">Live Now · {{ live_now|length }} Match{{ 'es' if live_now|length != 1 else '' }}</span>
+  </div>
+  <div class="space-y-3">
+    {% for m in live_now %}
+    <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;">
+      <!-- Home team -->
+      <div style="display:flex;align-items:center;gap:.5rem;flex:1;min-width:100px;">
+        {% set hf = flag_url(m.home_team) %}
+        {% if hf %}<img src="{{ hf }}" alt="{{ m.home_team }}" style="width:1.75rem;height:1.25rem;object-fit:cover;border-radius:3px;box-shadow:0 1px 4px rgba(0,0,0,.4);" loading="lazy"/>{% endif %}
+        <span style="font-weight:800;font-size:.95rem;color:#e2e8f0;">{{ m.home_team }}</span>
+      </div>
+
+      <!-- Score / VS + elapsed time -->
+      <div style="text-align:center;flex-shrink:0;">
+        <div style="font-weight:900;font-size:1.1rem;color:#f87171;letter-spacing:.05em;">vs</div>
+        <div style="font-size:.6rem;color:#6b7280;margin-top:.1rem;">
+          <span class="elapsed-timer" data-kickoff="{{ m.match_time_utc.timestamp()|int }}">--'</span>
+        </div>
+      </div>
+
+      <!-- Away team -->
+      <div style="display:flex;align-items:center;gap:.5rem;flex:1;min-width:100px;justify-content:flex-end;">
+        <span style="font-weight:800;font-size:.95rem;color:#e2e8f0;">{{ m.away_team }}</span>
+        {% set af = flag_url(m.away_team) %}
+        {% if af %}<img src="{{ af }}" alt="{{ m.away_team }}" style="width:1.75rem;height:1.25rem;object-fit:cover;border-radius:3px;box-shadow:0 1px 4px rgba(0,0,0,.4);" loading="lazy"/>{% endif %}
+      </div>
+
+      <!-- Kickoff time -->
+      <div style="width:100%;font-size:.65rem;color:#4b5563;text-align:center;margin-top:-.25rem;">
+        Kicked off {{ m.npt_time.strftime('%I:%M %p NPT') }} · {{ m.stage }}
+      </div>
+    </div>
+    {% if not loop.last %}<div style="height:1px;background:rgba(239,68,68,.15);margin:.25rem 0;"></div>{% endif %}
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
 <!-- Stage nav pills -->
 <div class="flex flex-wrap gap-2 mb-6">
   {% for stage, _ in stages %}
@@ -209,6 +253,17 @@ function tickAll() {
   });
 }
 tickAll(); setInterval(tickAll, 1000);
+
+/* Elapsed timer for live matches */
+function tickElapsed() {
+  const now = Math.floor(Date.now() / 1000);
+  document.querySelectorAll('.elapsed-timer').forEach(el => {
+    const kickoff = parseInt(el.dataset.kickoff, 10);
+    const mins = Math.floor((now - kickoff) / 60);
+    el.textContent = mins > 0 ? `${mins}'` : 'Just kicked off';
+  });
+}
+tickElapsed(); setInterval(tickElapsed, 30000);
 
 /* ── FIFA Official Group Standings ── */
 
