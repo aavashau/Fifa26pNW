@@ -176,46 +176,6 @@
           </div>
         </div>
 
-        <!-- All users' predictions — shown once prediction window closes -->
-        {% if m.status not in ('open', 'upcoming') %}
-          {% set match_preds = preds_by_match.get(m.match_code, []) %}
-          {% if match_preds %}
-          <div style="border-top:1px solid #0f1929;margin-top:.5rem;padding-top:.6rem;">
-            <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.4rem;">
-              <span style="font-size:.6rem;font-weight:900;text-transform:uppercase;letter-spacing:.07em;color:#334155;">All Predictions</span>
-              <span style="font-size:.6rem;color:#1e3a5f;background:#0d1929;border:1px solid #1a3055;border-radius:999px;padding:.05rem .4rem;">{{ match_preds|length }}</span>
-            </div>
-            <div style="display:flex;flex-wrap:wrap;gap:.35rem;">
-              {% for p in match_preds | sort(attribute='username') %}
-              <div style="display:flex;align-items:center;gap:.3rem;padding:.25rem .5rem;border-radius:6px;font-size:.7rem;
-                {% if p.user_id == user.id %}background:rgba(0,230,118,.1);border:1px solid rgba(0,230,118,.25);
-                {% else %}background:#0a1525;border:1px solid #1a3055;{% endif %}">
-                <span style="font-weight:700;color:{% if p.user_id == user.id %}#00e676{% else %}#94a3b8{% endif %};">
-                  {{ p.username or ('User ' ~ p.user_id) }}
-                </span>
-                <span style="color:#334155;font-size:.6rem;">·</span>
-                <span style="font-weight:800;color:
-                  {% if p.points_earned == 3 %}#fbbf24
-                  {% elif p.points_earned == 1 %}#4ade80
-                  {% elif p.points_earned == 0 %}#f87171
-                  {% else %}#e2e8f0{% endif %};">
-                  {{ p.home_score }}–{{ p.away_score }}
-                </span>
-                {% if p.points_earned is not none %}
-                <span style="font-size:.6rem;color:
-                  {% if p.points_earned == 3 %}#fbbf24
-                  {% elif p.points_earned == 1 %}#4ade80
-                  {% else %}#f87171{% endif %};">
-                  +{{ p.points_earned }}
-                </span>
-                {% endif %}
-              </div>
-              {% endfor %}
-            </div>
-          </div>
-          {% endif %}
-        {% endif %}
-
         {% endfor %}
       </div>
     </div>

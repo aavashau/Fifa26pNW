@@ -445,15 +445,8 @@ def fixtures_page(request: Request):
     stages = [(s, grouped[s]) for s in stage_order if s in grouped]
     live_now = [m for m in enriched if not m["is_completed"] and m["status"] == "live"]
 
-    # All predictions grouped by match_code (shown after prediction closes)
-    all_preds = sheets.get_all_predictions()
-    preds_by_match: dict[str, list] = {}
-    for p in all_preds:
-        preds_by_match.setdefault(p["match_code"], []).append(p)
-
     return templates.TemplateResponse("fixtures.html", {
         "request": request, "user": user, "stages": stages, "live_now": live_now,
-        "preds_by_match": preds_by_match,
     })
 
 
@@ -498,6 +491,34 @@ async def predict_post(request: Request, match_code: str,
 
     sheets.upsert_prediction(user["id"], match_code, home_score, away_score)
     return RedirectResponse("/fixtures", status_code=302)
+
+
+@app.get("/predictions/{match_code}", response_class=HTMLResponse)
+def predictions_page(request: Request, match_code: str):
+    user = current_user(request)
+    if not user:
+        return RedirectResponse("/login", status_code=302)
+
+    match = sheets.get_match(match_code)
+    if not match:
+        raise HTTPException(status_code=404, detail="Match not found")
+
+    status = prediction_status(match["match_time_utc"])
+    if status in ("open", "upcoming"):
+        raise HTTPException(status_code=403, detail="Predictions not yet revealed.")
+
+    all_users = {u["id"]: u for u in sheets.get_all_users()}
+    preds = [p for p in sheets.get_all_predictions() if p["match_code"] == match_code]
+    preds.sort(key=lambda p: (-(p["points_earned"] or 0), (p.get("username") or "").lower()))
+
+    return templates.TemplateResponse("predictions.html", {
+        "request": request, "user": user,
+        "match": match,
+        "npt_time": to_npt(match["match_time_utc"]),
+        "status": status,
+        "preds": preds,
+        "all_users": all_users,
+    })
 
 
 @app.get("/leaderboard", response_class=HTMLResponse)

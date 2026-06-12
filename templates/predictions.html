@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% set active = "fixtures" %}
+{% block title %}Predictions · {{ match.home_team }} vs {{ match.away_team }}{% endblock %}
+
+{% block content %}
+
+<!-- Breadcrumb -->
+<div class="flex items-center gap-2 text-xs text-slate-500 mb-5">
+  <a href="/dashboard" class="hover:text-slate-300 transition-colors">Dashboard</a>
+  <span>›</span>
+  <a href="/fixtures" class="hover:text-slate-300 transition-colors">Fixtures</a>
+  <span>›</span>
+  <span style="color:#60a5fa;">Predictions</span>
+</div>
+
+<!-- Match header -->
+<div class="card card-accent p-5 mb-6">
+  <div class="flex items-center justify-between flex-wrap gap-3">
+    <div class="flex items-center gap-4">
+      <!-- Home -->
+      <div class="flex items-center gap-2">
+        {% set hf = flag_url(match.home_team) %}
+        {% if hf %}<img src="{{ hf }}" alt="{{ match.home_team }}" class="w-10 h-7 object-cover rounded shadow"/>{% endif %}
+        <span class="font-black text-lg text-white">{{ match.home_team }}</span>
+      </div>
+
+      <!-- Score or VS -->
+      {% if match.is_completed %}
+        <span class="font-black text-2xl px-3" style="color:#fbbf24;">{{ match.home_score }} – {{ match.away_score }}</span>
+      {% else %}
+        <span class="text-slate-500 font-700 text-base px-2">vs</span>
+      {% endif %}
+
+      <!-- Away -->
+      <div class="flex items-center gap-2">
+        <span class="font-black text-lg text-white">{{ match.away_team }}</span>
+        {% set af = flag_url(match.away_team) %}
+        {% if af %}<img src="{{ af }}" alt="{{ match.away_team }}" class="w-10 h-7 object-cover rounded shadow"/>{% endif %}
+      </div>
+    </div>
+
+    <div class="text-right">
+      <div class="text-xs text-slate-500">{{ match.stage }}</div>
+      <div class="text-xs text-slate-400 mt-0.5">{{ npt_time.strftime('%d %b %Y · %I:%M %p') }} NPT</div>
+      {% if match.is_completed %}
+        <span class="badge badge-completed mt-1">Full Time</span>
+      {% else %}
+        <span class="badge badge-{{ status }} mt-1">{{ status }}</span>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Predictions table -->
+<div class="card" style="overflow:hidden;">
+  <div style="padding:.75rem 1.25rem;background:linear-gradient(135deg,#111f35,#0d1929);border-bottom:1px solid #1a3055;display:flex;align-items:center;justify-content:space-between;">
+    <span style="font-size:.7rem;font-weight:900;text-transform:uppercase;letter-spacing:.08em;color:#60a5fa;">All Predictions</span>
+    <span style="font-size:.7rem;color:#334155;">{{ preds|length }} submitted</span>
+  </div>
+
+  {% if preds %}
+  <div style="overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;font-size:.82rem;">
+      <thead>
+        <tr style="background:#0d1929;border-bottom:1px solid #1a3055;">
+          <th style="padding:.55rem 1rem;text-align:left;color:#475569;font-weight:700;font-size:.65rem;text-transform:uppercase;letter-spacing:.05em;">#</th>
+          <th style="padding:.55rem .75rem;text-align:left;color:#475569;font-weight:700;font-size:.65rem;text-transform:uppercase;letter-spacing:.05em;">Player</th>
+          <th style="padding:.55rem .75rem;text-align:center;color:#475569;font-weight:700;font-size:.65rem;text-transform:uppercase;letter-spacing:.05em;">{{ match.home_team }}</th>
+          <th style="padding:.55rem .25rem;text-align:center;color:#334155;font-size:.65rem;">–</th>
+          <th style="padding:.55rem .75rem;text-align:center;color:#475569;font-weight:700;font-size:.65rem;text-transform:uppercase;letter-spacing:.05em;">{{ match.away_team }}</th>
+          <th style="padding:.55rem .75rem;text-align:center;color:#475569;font-weight:700;font-size:.65rem;text-transform:uppercase;letter-spacing:.05em;">Result</th>
+          {% if match.is_completed %}
+          <th style="padding:.55rem 1rem;text-align:center;color:#475569;font-weight:700;font-size:.65rem;text-transform:uppercase;letter-spacing:.05em;">Pts</th>
+          {% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in preds %}
+        {% set is_me = p.user_id == user.id %}
+        <tr style="border-bottom:1px solid #0a1525;transition:background .15s;
+            {% if is_me %}background:rgba(0,230,118,.04);{% endif %}"
+            onmouseover="this.style.background='rgba(255,255,255,.02)'"
+            onmouseout="this.style.background='{% if is_me %}rgba(0,230,118,.04){% endif %}'">
+
+          <td style="padding:.6rem 1rem;color:#334155;font-weight:700;">{{ loop.index }}</td>
+
+          <td style="padding:.6rem .75rem;">
+            <div style="display:flex;align-items:center;gap:.5rem;">
+              <div style="width:1.6rem;height:1.6rem;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:900;flex-shrink:0;
+                  {% if is_me %}background:rgba(0,230,118,.2);color:#00e676;
+                  {% else %}background:#1a3055;color:#64748b;{% endif %}">
+                {{ (p.username or 'U')[0].upper() }}
+              </div>
+              <span style="font-weight:{% if is_me %}800{% else %}600{% endif %};
+                           color:{% if is_me %}#00e676{% else %}#e2e8f0{% endif %};">
+                {{ p.username or ('User ' ~ p.user_id) }}
+                {% if is_me %}<span style="font-size:.6rem;color:#00e676;margin-left:.25rem;">(you)</span>{% endif %}
+              </span>
+            </div>
+          </td>
+
+          <td style="padding:.6rem .75rem;text-align:center;font-weight:900;font-size:1rem;color:#e2e8f0;">
+            {{ p.home_score }}
+          </td>
+          <td style="padding:.6rem .25rem;text-align:center;color:#334155;font-size:.7rem;">–</td>
+          <td style="padding:.6rem .75rem;text-align:center;font-weight:900;font-size:1rem;color:#e2e8f0;">
+            {{ p.away_score }}
+          </td>
+
+          <td style="padding:.6rem .75rem;text-align:center;">
+            {% if match.is_completed and p.points_earned is not none %}
+              {% if p.points_earned == 3 %}
+                <span style="font-size:.65rem;font-weight:800;color:#fbbf24;">🎯 Exact</span>
+              {% elif p.points_earned == 1 %}
+                <span style="font-size:.65rem;font-weight:800;color:#4ade80;">✓ Winner</span>
+              {% else %}
+                <span style="font-size:.65rem;font-weight:800;color:#f87171;">✗ Wrong</span>
+              {% endif %}
+            {% else %}
+              <span style="font-size:.65rem;color:#334155;">pending</span>
+            {% endif %}
+          </td>
+
+          {% if match.is_completed %}
+          <td style="padding:.6rem 1rem;text-align:center;font-weight:900;
+              color:{% if p.points_earned == 3 %}#fbbf24{% elif p.points_earned == 1 %}#4ade80{% elif p.points_earned == 0 %}#f87171{% else %}#475569{% endif %};">
+            {% if p.points_earned is not none %}+{{ p.points_earned }}{% else %}–{% endif %}
+          </td>
+          {% endif %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% else %}
+  <div style="padding:2rem;text-align:center;color:#475569;font-size:.85rem;">
+    No predictions submitted for this match.
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}

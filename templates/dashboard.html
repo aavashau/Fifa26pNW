@@ -112,6 +112,12 @@
       {% elif m.status == 'upcoming' and not m.user_prediction %}
         <span class="text-xs text-slate-600 italic">Opens 24h before</span>
       {% endif %}
+      {% if m.status not in ('open', 'upcoming') %}
+        <a href="/predictions/{{ m.match_code }}"
+           style="font-size:.7rem;color:#60a5fa;border:1px solid rgba(96,165,250,.25);border-radius:6px;padding:.3rem .6rem;white-space:nowrap;">
+          👁 Predictions
+        </a>
+      {% endif %}
     </div>
   </div>
   {% endfor %}
@@ -145,24 +151,30 @@
         </div>
       </div>
     </div>
-    {% if m.user_prediction %}
-    <div class="text-right shrink-0">
-      <div class="text-xs text-slate-500">Your pick</div>
-      <div class="text-sm font-700">{{ m.user_prediction.home_score }} – {{ m.user_prediction.away_score }}</div>
-      {% if m.user_prediction.points_earned is not none %}
-      <div class="text-xs font-black mt-0.5
-        {% if m.user_prediction.points_earned == 3 %}text-yellow-400
-        {% elif m.user_prediction.points_earned == 1 %}text-green-400
-        {% else %}text-red-400{% endif %}">
-        {% if m.user_prediction.points_earned == 3 %}🎯 +3 pts
-        {% elif m.user_prediction.points_earned == 1 %}✓ +1 pt
-        {% else %}✗ 0 pts{% endif %}
+    <div class="flex items-center gap-3 shrink-0">
+      {% if m.user_prediction %}
+      <div class="text-right">
+        <div class="text-xs text-slate-500">Your pick</div>
+        <div class="text-sm font-700">{{ m.user_prediction.home_score }} – {{ m.user_prediction.away_score }}</div>
+        {% if m.user_prediction.points_earned is not none %}
+        <div class="text-xs font-black mt-0.5
+          {% if m.user_prediction.points_earned == 3 %}text-yellow-400
+          {% elif m.user_prediction.points_earned == 1 %}text-green-400
+          {% else %}text-red-400{% endif %}">
+          {% if m.user_prediction.points_earned == 3 %}🎯 +3 pts
+          {% elif m.user_prediction.points_earned == 1 %}✓ +1 pt
+          {% else %}✗ 0 pts{% endif %}
+        </div>
+        {% endif %}
       </div>
+      {% else %}
+      <div class="text-xs text-slate-600 italic">No prediction</div>
       {% endif %}
+      <a href="/predictions/{{ m.match_code }}"
+         style="font-size:.7rem;color:#60a5fa;border:1px solid rgba(96,165,250,.25);border-radius:6px;padding:.3rem .6rem;white-space:nowrap;">
+        👁 Predictions
+      </a>
     </div>
-    {% else %}
-    <div class="text-xs text-slate-600 italic shrink-0">No prediction</div>
-    {% endif %}
   </div>
   {% endfor %}
 </div>
