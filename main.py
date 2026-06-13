@@ -396,6 +396,11 @@ def dashboard(request: Request):
     now = datetime.now(timezone.utc)
     all_matches = sheets.get_all_matches()
 
+    live = [m for m in all_matches
+            if not m["is_completed"] and m["match_time_utc"] and m["match_time_utc"] <= now]
+    live.sort(key=lambda m: m["match_time_utc"])
+    live = enrich_matches(live, user["id"])
+
     upcoming = [m for m in all_matches
                 if not m["is_completed"] and m["match_time_utc"] and m["match_time_utc"] > now]
     upcoming.sort(key=lambda m: m["match_time_utc"])
@@ -416,7 +421,7 @@ def dashboard(request: Request):
 
     return templates.TemplateResponse("dashboard.html", {
         "request": request, "user": user,
-        "upcoming": upcoming, "recent": recent,
+        "live": live, "upcoming": upcoming, "recent": recent,
         "total_pts": total_pts, "predicted_count": predicted_count,
         "my_rank": my_rank, "total_users": len(lb),
         "open_count": len(open_matches),

@@ -35,6 +35,55 @@
 </div>
 {% endif %}
 
+<!-- Live matches -->
+{% if live %}
+<div class="flex items-center gap-3 mb-4">
+  <span style="width:.55rem;height:.55rem;border-radius:50%;background:#f87171;display:inline-block;animation:pulse-dot 1s infinite;flex-shrink:0;"></span>
+  <h2 class="text-base font-black uppercase tracking-widest" style="color:#f87171;">Live Now</h2>
+  <div class="flex-1 h-px" style="background:linear-gradient(90deg,rgba(248,113,113,.3),transparent)"></div>
+</div>
+<div class="space-y-2 mb-8">
+  {% for m in live %}
+  <div class="card match-live px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3">
+    <div class="flex-1 min-w-0">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="text-xs text-slate-500 font-600">{{ m.stage }}</span>
+        <span class="badge badge-live">live</span>
+      </div>
+      <div class="flex items-center gap-2 flex-wrap mb-1.5">
+        <div class="flex items-center gap-2">
+          {% set hf = flag_url(m.home_team) %}
+          {% if hf %}<img src="{{ hf }}" alt="{{ m.home_team }}" class="w-7 h-5 object-cover rounded shadow" loading="lazy"/>{% endif %}
+          <span class="font-800 text-sm">{{ m.home_team }}</span>
+        </div>
+        <span class="text-slate-600 text-xs font-500 px-1">vs</span>
+        <div class="flex items-center gap-2">
+          {% set af = flag_url(m.away_team) %}
+          {% if af %}<img src="{{ af }}" alt="{{ m.away_team }}" class="w-7 h-5 object-cover rounded shadow" loading="lazy"/>{% endif %}
+          <span class="font-800 text-sm">{{ m.away_team }}</span>
+        </div>
+      </div>
+      <div class="text-xs text-slate-500">🕐 Kicked off {{ m.npt_time.strftime('%d %b %Y · %I:%M %p') }} NPT</div>
+    </div>
+    <div class="flex items-center gap-3 shrink-0">
+      {% if m.user_prediction %}
+        <div class="text-center px-3 py-1.5 rounded-lg" style="background:#0d1929;border:1px solid #1a3055;">
+          <div class="text-xs text-slate-500 mb-0.5">Your pick</div>
+          <div class="font-black text-base" style="color:#00e676;">
+            {{ m.user_prediction.home_score }} – {{ m.user_prediction.away_score }}
+          </div>
+        </div>
+      {% endif %}
+      <a href="/predictions/{{ m.match_code }}"
+         style="font-size:.7rem;color:#60a5fa;border:1px solid rgba(96,165,250,.25);border-radius:6px;padding:.3rem .6rem;white-space:nowrap;">
+        👁 Predictions
+      </a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
 <!-- Upcoming matches -->
 <div class="flex items-center gap-3 mb-4">
   <h2 class="text-base font-black uppercase tracking-widest text-slate-300">Upcoming Matches</h2>
