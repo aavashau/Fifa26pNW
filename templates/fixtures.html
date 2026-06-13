@@ -173,6 +173,12 @@
                 {% if m.user_prediction %}Edit{% else %}Predict{% endif %}
               </a>
             {% endif %}
+            {% if m.status not in ('open', 'upcoming') %}
+              <a href="/predictions/{{ m.match_code }}"
+                 style="font-size:.7rem;color:#60a5fa;border:1px solid rgba(96,165,250,.25);border-radius:6px;padding:.3rem .6rem;white-space:nowrap;">
+                👁 Predictions
+              </a>
+            {% endif %}
           </div>
         </div>
 
